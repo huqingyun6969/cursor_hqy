@@ -1,0 +1,343 @@
+/**
+ * 省级综合交通运输信息平台 - 全局样式
+ * 配色规范：蓝白为主，符合交通行业规范
+ */
+
+/* 全局重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f2f5;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 布局容器 */
+.app-container {
+  min-height: 100vh;
+}
+
+/* 页面标题 */
+.page-header {
+  background: #fff;
+  padding: 16px 24px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  color: #001529;
+}
+
+.page-header .subtitle {
+  margin-top: 4px;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+/* 卡片样式 */
+.stat-card {
+  background: #fff;
+  border-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.3s;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card .stat-title {
+  color: #8c8c8c;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 600;
+  color: #001529;
+}
+
+.stat-card .stat-trend {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.stat-card .stat-trend.up {
+  color: #f5222d;
+}
+
+.stat-card .stat-trend.down {
+  color: #52c41a;
+}
+
+/* 状态标签颜色 */
+.status-smooth { color: #52c41a; }
+.status-slow { color: #faad14; }
+.status-congested { color: #ff7a45; }
+.status-blocked { color: #f5222d; }
+
+/* 预警级别颜色 */
+.level-blue { color: #1890ff; background: #e6f7ff; }
+.level-yellow { color: #faad14; background: #fffbe6; }
+.level-orange { color: #fa8c16; background: #fff7e6; }
+.level-red { color: #f5222d; background: #fff1f0; }
+
+/* 图表容器 */
+.chart-container {
+  background: #fff;
+  border-radius: 4px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.chart-container .chart-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #001529;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* 表格样式增强 */
+.ant-table-wrapper {
+  background: #fff;
+  border-radius: 4px;
+}
+
+/* 驾驶舱样式 */
+.dashboard-container {
+  padding: 16px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dashboard-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #001529;
+}
+
+.dashboard-time {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+/* 地图容器 */
+.map-container {
+  width: 100%;
+  height: 500px;
+  background: #e8f4fc;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.map-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #8c8c8c;
+}
+
+/* 实时数据动画 */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.realtime-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.realtime-dot {
+  width: 8px;
+  height: 8px;
+  background: #52c41a;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 12px 16px;
+  }
+  
+  .stat-card .stat-value {
+    font-size: 24px;
+  }
+  
+  .dashboard-container {
+    padding: 8px;
+  }
+}
+
+/* 移动端一键查询样式 */
+.mobile-query-card {
+  max-width: 400px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border-radius: 8px;
+  padding: 24px;
+  color: #fff;
+}
+
+.mobile-query-card .query-title {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+/* 预案卡片 */
+.plan-card {
+  border-left: 4px solid #1890ff;
+  transition: all 0.3s;
+}
+
+.plan-card:hover {
+  border-left-color: #40a9ff;
+  transform: translateX(4px);
+}
+
+.plan-card.level-I { border-left-color: #f5222d; }
+.plan-card.level-II { border-left-color: #fa8c16; }
+.plan-card.level-III { border-left-color: #faad14; }
+.plan-card.level-IV { border-left-color: #1890ff; }
+
+/* 事件时间线 */
+.event-timeline {
+  padding: 16px;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  background: #1890ff;
+  border-radius: 50%;
+  margin-right: 12px;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-time {
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+/* 救援状态进度 */
+.rescue-progress {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 0;
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.progress-step::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: #e8e8e8;
+}
+
+.progress-step:last-child::after {
+  display: none;
+}
+
+.progress-step.active::after {
+  background: #1890ff;
+}
+
+.step-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  color: #8c8c8c;
+}
+
+.progress-step.active .step-icon {
+  background: #1890ff;
+  color: #fff;
+}
+
+.step-label {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.progress-step.active .step-label {
+  color: #1890ff;
+}
