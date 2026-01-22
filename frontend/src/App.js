@@ -1,8 +1,8 @@
 /**
  * 省级综合交通运输信息平台 - 主应用组件
  */
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Typography, Space, Badge } from 'antd';
 import {
   DashboardOutlined,
@@ -90,151 +90,197 @@ const menuItems = [
   },
 ];
 
-function App() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [selectedKeys, setSelectedKeys] = useState(['/traffic-warning/dashboard']);
-  const [openKeys, setOpenKeys] = useState(['traffic-warning']);
+// 根据路径获取父级菜单key
+const getParentKey = (path) => {
+  if (path.startsWith('/traffic-warning')) return 'traffic-warning';
+  if (path.startsWith('/emergency')) return 'emergency';
+  if (path.startsWith('/infrastructure')) return 'infrastructure';
+  if (path.startsWith('/travel')) return 'travel';
+  return 'traffic-warning';
+};
 
-  // 获取当前时间
-  const currentTime = new Date().toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
+// 主布局组件（在Router内部使用，可以访问路由hooks）
+function AppLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
+  const [currentTime, setCurrentTime] = useState('');
+  
+  // 根据当前路径设置选中的菜单项
+  const [selectedKeys, setSelectedKeys] = useState([location.pathname]);
+  const [openKeys, setOpenKeys] = useState([getParentKey(location.pathname)]);
+
+  // 更新时间
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(new Date().toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }));
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // 监听路由变化，同步菜单状态
+  useEffect(() => {
+    setSelectedKeys([location.pathname]);
+    setOpenKeys([getParentKey(location.pathname)]);
+  }, [location.pathname]);
+
+  // 菜单点击处理
+  const handleMenuClick = ({ key }) => {
+    // 只有子菜单项（以/开头的）才需要导航
+    if (key.startsWith('/')) {
+      setSelectedKeys([key]);
+      navigate(key);
+    }
+  };
+
+  // 处理子菜单展开
+  const handleOpenChange = (keys) => {
+    setOpenKeys(keys);
+  };
 
   return (
-    <Router>
-      <Layout className="app-container">
-        {/* 侧边栏 */}
-        <Sider 
-          trigger={null} 
-          collapsible 
-          collapsed={collapsed}
-          width={240}
-          style={{
-            overflow: 'auto',
-            height: '100vh',
-            position: 'fixed',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            zIndex: 100,
-          }}
-        >
-          {/* Logo */}
-          <div style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(255,255,255,0.1)',
-          }}>
-            <DashboardOutlined style={{ fontSize: 24, color: '#1890ff' }} />
-            {!collapsed && (
-              <Title level={5} style={{ 
-                color: '#fff', 
-                margin: '0 0 0 12px',
-                whiteSpace: 'nowrap' 
-              }}>
-                交通运输平台
-              </Title>
-            )}
-          </div>
-          
-          {/* 导航菜单 */}
-          <Menu
-            theme="dark"
-            mode="inline"
-            selectedKeys={selectedKeys}
-            openKeys={openKeys}
-            onSelect={({ key }) => setSelectedKeys([key])}
-            onOpenChange={setOpenKeys}
-            items={menuItems}
-            onClick={({ key }) => {
-              setSelectedKeys([key]);
-            }}
-          />
-        </Sider>
+    <Layout className="app-container">
+      {/* 侧边栏 */}
+      <Sider 
+        trigger={null} 
+        collapsible 
+        collapsed={collapsed}
+        width={240}
+        style={{
+          overflow: 'auto',
+          height: '100vh',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          zIndex: 100,
+        }}
+      >
+        {/* Logo */}
+        <div style={{
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(255,255,255,0.1)',
+        }}>
+          <DashboardOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+          {!collapsed && (
+            <Title level={5} style={{ 
+              color: '#fff', 
+              margin: '0 0 0 12px',
+              whiteSpace: 'nowrap' 
+            }}>
+              交通运输平台
+            </Title>
+          )}
+        </div>
         
-        {/* 主内容区 */}
-        <Layout style={{ marginLeft: collapsed ? 80 : 240, transition: 'margin-left 0.2s' }}>
-          {/* 顶部导航栏 */}
-          <Header style={{
-            padding: '0 24px',
-            background: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 99,
-          }}>
-            <Space>
-              {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
-                style: { fontSize: 18, cursor: 'pointer' },
-                onClick: () => setCollapsed(!collapsed),
-              })}
-              <span style={{ marginLeft: 12, color: '#001529', fontWeight: 500 }}>
-                省级综合交通运输信息平台
-              </span>
-            </Space>
-            
-            <Space size={24}>
-              <span className="realtime-indicator">
-                <span className="realtime-dot"></span>
-                <span style={{ color: '#8c8c8c', fontSize: 14 }}>{currentTime}</span>
-              </span>
-              <Badge count={5} size="small">
-                <BellOutlined style={{ fontSize: 18, cursor: 'pointer' }} />
-              </Badge>
-              <Space style={{ cursor: 'pointer' }}>
-                <UserOutlined />
-                <span>管理员</span>
-              </Space>
-            </Space>
-          </Header>
+        {/* 导航菜单 */}
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={selectedKeys}
+          openKeys={openKeys}
+          onOpenChange={handleOpenChange}
+          items={menuItems}
+          onClick={handleMenuClick}
+        />
+      </Sider>
+      
+      {/* 主内容区 */}
+      <Layout style={{ marginLeft: collapsed ? 80 : 240, transition: 'margin-left 0.2s' }}>
+        {/* 顶部导航栏 */}
+        <Header style={{
+          padding: '0 24px',
+          background: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 99,
+        }}>
+          <Space>
+            {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
+              style: { fontSize: 18, cursor: 'pointer' },
+              onClick: () => setCollapsed(!collapsed),
+            })}
+            <span style={{ marginLeft: 12, color: '#001529', fontWeight: 500 }}>
+              省级综合交通运输信息平台
+            </span>
+          </Space>
           
-          {/* 内容区 */}
-          <Content style={{
-            margin: 16,
-            minHeight: 'calc(100vh - 64px - 32px)',
-          }}>
-            <Routes>
-              {/* 默认重定向 */}
-              <Route path="/" element={<Navigate to="/traffic-warning/dashboard" replace />} />
-              
-              {/* 交通运行预警预测子系统 */}
-              <Route path="/traffic-warning/dashboard" element={<TrafficWarningDashboard />} />
-              <Route path="/traffic-warning/map" element={<TrafficWarningMap />} />
-              <Route path="/traffic-warning/rules" element={<TrafficWarningRules />} />
-              <Route path="/traffic-warning/report" element={<TrafficWarningReport />} />
-              
-              {/* 应急指挥调度管理子系统 */}
-              <Route path="/emergency/overview" element={<EmergencyOverview />} />
-              <Route path="/emergency/resources" element={<EmergencyResources />} />
-              <Route path="/emergency/plans" element={<EmergencyPlans />} />
-              <Route path="/emergency/events" element={<EmergencyEvents />} />
-              <Route path="/emergency/duty" element={<EmergencyDuty />} />
-              
-              {/* 基础设施监测预警子系统 */}
-              <Route path="/infrastructure/dashboard" element={<InfrastructureDashboard />} />
-              <Route path="/infrastructure/facilities" element={<InfrastructureFacilities />} />
-              <Route path="/infrastructure/alerts" element={<InfrastructureAlerts />} />
-              <Route path="/infrastructure/mobile" element={<InfrastructureMobile />} />
-              
-              {/* 一张网出行服务子系统 */}
-              <Route path="/travel/map" element={<TravelMap />} />
-              <Route path="/travel/service-areas" element={<TravelServiceAreas />} />
-              <Route path="/travel/rescue" element={<TravelRescue />} />
-              <Route path="/travel/recommendations" element={<TravelRecommendations />} />
-            </Routes>
-          </Content>
-        </Layout>
+          <Space size={24}>
+            <span className="realtime-indicator">
+              <span className="realtime-dot"></span>
+              <span style={{ color: '#8c8c8c', fontSize: 14 }}>{currentTime}</span>
+            </span>
+            <Badge count={5} size="small">
+              <BellOutlined style={{ fontSize: 18, cursor: 'pointer' }} />
+            </Badge>
+            <Space style={{ cursor: 'pointer' }}>
+              <UserOutlined />
+              <span>管理员</span>
+            </Space>
+          </Space>
+        </Header>
+        
+        {/* 内容区 */}
+        <Content style={{
+          margin: 16,
+          minHeight: 'calc(100vh - 64px - 32px)',
+        }}>
+          <Routes>
+            {/* 默认重定向 */}
+            <Route path="/" element={<Navigate to="/traffic-warning/dashboard" replace />} />
+            
+            {/* 交通运行预警预测子系统 */}
+            <Route path="/traffic-warning/dashboard" element={<TrafficWarningDashboard />} />
+            <Route path="/traffic-warning/map" element={<TrafficWarningMap />} />
+            <Route path="/traffic-warning/rules" element={<TrafficWarningRules />} />
+            <Route path="/traffic-warning/report" element={<TrafficWarningReport />} />
+            
+            {/* 应急指挥调度管理子系统 */}
+            <Route path="/emergency/overview" element={<EmergencyOverview />} />
+            <Route path="/emergency/resources" element={<EmergencyResources />} />
+            <Route path="/emergency/plans" element={<EmergencyPlans />} />
+            <Route path="/emergency/events" element={<EmergencyEvents />} />
+            <Route path="/emergency/duty" element={<EmergencyDuty />} />
+            
+            {/* 基础设施监测预警子系统 */}
+            <Route path="/infrastructure/dashboard" element={<InfrastructureDashboard />} />
+            <Route path="/infrastructure/facilities" element={<InfrastructureFacilities />} />
+            <Route path="/infrastructure/alerts" element={<InfrastructureAlerts />} />
+            <Route path="/infrastructure/mobile" element={<InfrastructureMobile />} />
+            
+            {/* 一张网出行服务子系统 */}
+            <Route path="/travel/map" element={<TravelMap />} />
+            <Route path="/travel/service-areas" element={<TravelServiceAreas />} />
+            <Route path="/travel/rescue" element={<TravelRescue />} />
+            <Route path="/travel/recommendations" element={<TravelRecommendations />} />
+          </Routes>
+        </Content>
       </Layout>
+    </Layout>
+  );
+}
+
+// 根组件（提供Router上下文）
+function App() {
+  return (
+    <Router>
+      <AppLayout />
     </Router>
   );
 }
