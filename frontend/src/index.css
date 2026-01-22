@@ -82,6 +82,20 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+/* 确保Row中的卡片高度一致 */
+.ant-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.ant-row > .ant-col {
+  display: flex;
+}
+
+.ant-row > .ant-col > .ant-card {
+  width: 100%;
+}
+
 .stat-card .stat-title {
   color: #8c8c8c;
   font-size: 14px;

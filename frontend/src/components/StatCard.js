@@ -20,7 +20,15 @@ const StatCard = ({
   style = {}
 }) => {
   const renderTrend = () => {
-    if (trendValue === undefined || trendValue === null) return null;
+    // 始终渲染趋势区域，保持高度一致
+    if (trendValue === undefined || trendValue === null) {
+      // 没有趋势数据时显示占位，保持高度一致
+      return (
+        <div style={{ height: 22, marginTop: 8 }}>
+          <Text style={{ fontSize: 12, visibility: 'hidden' }}>占位</Text>
+        </div>
+      );
+    }
     
     const isUp = trendValue > 0;
     const trendColor = trend === 'positive' 
@@ -28,7 +36,7 @@ const StatCard = ({
       : (isUp ? '#f5222d' : '#52c41a');
     
     return (
-      <div style={{ marginTop: 8 }}>
+      <div style={{ height: 22, marginTop: 8 }}>
         <Text style={{ color: trendColor, fontSize: 12 }}>
           {isUp ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
           {' '}{Math.abs(trendValue)}%
@@ -45,12 +53,13 @@ const StatCard = ({
       loading={loading}
       style={{ 
         borderRadius: 4,
+        height: '100%',
         ...style
       }}
       bodyStyle={{ padding: 20 }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <Text type="secondary" style={{ fontSize: 14 }}>{title}</Text>
           <Statistic
             value={value}
@@ -75,7 +84,9 @@ const StatCard = ({
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 24,
-            color: color
+            color: color,
+            flexShrink: 0,
+            marginLeft: 12
           }}>
             {icon}
           </div>
