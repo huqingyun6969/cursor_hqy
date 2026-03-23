@@ -67,6 +67,9 @@ public class TaskExecutionEngine {
     private final ExecutionDetailMapper executionDetailMapper;
     private final ExecutionViolationMapper violationMapper;
     private final QualityReportMapper qualityReportMapper;
+    private final WorkOrderMapper workOrderMapper;
+    private final WorkOrderIssueMapper workOrderIssueMapper;
+    private final WorkOrderLogMapper workOrderLogMapper;
     private final RuleGroupService ruleGroupService;
     private final RuleDefinitionService ruleDefinitionService;
     private final DataSourceConfigService dataSourceConfigService;
@@ -87,6 +90,9 @@ public class TaskExecutionEngine {
                                 ExecutionDetailMapper executionDetailMapper,
                                 ExecutionViolationMapper violationMapper,
                                 QualityReportMapper qualityReportMapper,
+                                WorkOrderMapper workOrderMapper,
+                                WorkOrderIssueMapper workOrderIssueMapper,
+                                WorkOrderLogMapper workOrderLogMapper,
                                 RuleGroupService ruleGroupService,
                                 RuleDefinitionService ruleDefinitionService,
                                 DataSourceConfigService dataSourceConfigService,
@@ -101,6 +107,9 @@ public class TaskExecutionEngine {
         this.executionDetailMapper = executionDetailMapper;
         this.violationMapper = violationMapper;
         this.qualityReportMapper = qualityReportMapper;
+        this.workOrderMapper = workOrderMapper;
+        this.workOrderIssueMapper = workOrderIssueMapper;
+        this.workOrderLogMapper = workOrderLogMapper;
         this.ruleGroupService = ruleGroupService;
         this.ruleDefinitionService = ruleDefinitionService;
         this.dataSourceConfigService = dataSourceConfigService;
@@ -352,6 +361,7 @@ public class TaskExecutionEngine {
                     Long reportId = generateReportForTask(task, record, rules);
                     task.setReportId(reportId);
                     log.info("Auto-generated quality report {} for task {}", reportId, taskId);
+                    autoCreateWorkOrder(task, reportId);
                 } catch (Exception re) {
                     log.error("Failed to auto-generate report for task {}: {}", taskId, re.getMessage());
                 }
@@ -454,19 +464,22 @@ public class TaskExecutionEngine {
 
                 if (violated > 0) {
                     subViolated += violated;
+                    List<ExecutionViolation> batch = new ArrayList<>();
                     for (int vi = 0; vi < Math.min(ruleContext.getSampleViolations().size(), 50); vi++) {
+                        ExecutionViolation ev = new ExecutionViolation();
+                        ev.setExecutionId(task.getExecutionId());
+                        ev.setTaskId(task.getId());
+                        ev.setRuleType(rule.getRuleType());
+                        ev.setFieldName(rule.getFieldName());
+                        ev.setRowIndex(sub.getOffsetStart() + vi);
+                        ev.setViolationReason(ruleContext.getSampleViolations().get(vi));
+                        batch.add(ev);
+                    }
+                    if (!batch.isEmpty()) {
                         try {
-                            ExecutionViolation ev = new ExecutionViolation();
-                            ev.setExecutionId(task.getExecutionId());
-                            ev.setTaskId(task.getId());
-                            ev.setRuleType(rule.getRuleType());
-                            ev.setFieldName(rule.getFieldName());
-                            ev.setRowIndex(sub.getOffsetStart() + vi);
-                            ev.setFieldValue(null);
-                            ev.setViolationReason(ruleContext.getSampleViolations().get(vi));
-                            violationMapper.insert(ev);
+                            batchInsertViolations(batch);
                         } catch (Exception ve) {
-                            log.debug("Failed to insert violation record: {}", ve.getMessage());
+                            log.debug("Failed to batch insert violations: {}", ve.getMessage());
                         }
                     }
                 } else {
@@ -653,6 +666,39 @@ public class TaskExecutionEngine {
         return status;
     }
 
+    public Map<String, Object> getViolationSummary(Long taskId) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        ExecutionTask task = taskMapper.selectById(taskId);
+        if (task == null || task.getExecutionId() == null) return summary;
+
+        long totalViolations = violationMapper.selectCount(
+                new LambdaQueryWrapper<ExecutionViolation>().eq(ExecutionViolation::getTaskId, taskId));
+        summary.put("totalViolations", totalViolations);
+
+        List<ExecutionDetail> details = executionDetailMapper.selectList(
+                new LambdaQueryWrapper<ExecutionDetail>().eq(ExecutionDetail::getExecutionId, task.getExecutionId()));
+
+        List<Map<String, Object>> ruleBreakdown = new ArrayList<>();
+        for (ExecutionDetail d : details) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("ruleId", d.getRuleId());
+            item.put("fieldName", d.getFieldName());
+            item.put("ruleType", d.getRuleType());
+            item.put("ruleDescription", d.getRuleDescription());
+            item.put("totalRows", d.getTotalRows());
+            item.put("violatedRows", d.getViolatedRows());
+            item.put("complianceRate", d.getComplianceRate());
+            item.put("qualityResult", d.getQualityResult());
+            ruleBreakdown.add(item);
+        }
+        summary.put("ruleBreakdown", ruleBreakdown);
+        summary.put("totalRows", task.getTotalRows());
+        summary.put("totalRules", details.size());
+        summary.put("failedRules", details.stream().filter(d -> "FAIL".equals(d.getQualityResult())).count());
+        summary.put("passedRules", details.stream().filter(d -> "PASS".equals(d.getQualityResult())).count());
+        return summary;
+    }
+
     public void updateSubTaskTimeout(Long taskId, int newTimeoutSec) {
         ExecutionTask task = taskMapper.selectById(taskId);
         if (task != null) {
@@ -700,6 +746,69 @@ public class TaskExecutionEngine {
         qualityReportMapper.insert(report);
 
         return report.getId();
+    }
+
+    private void batchInsertViolations(List<ExecutionViolation> batch) {
+        if (batch.isEmpty()) return;
+        final int BATCH_SIZE = 200;
+        for (int i = 0; i < batch.size(); i += BATCH_SIZE) {
+            List<ExecutionViolation> chunk = batch.subList(i, Math.min(i + BATCH_SIZE, batch.size()));
+            for (ExecutionViolation ev : chunk) {
+                violationMapper.insert(ev);
+            }
+        }
+    }
+
+    private void autoCreateWorkOrder(ExecutionTask task, Long reportId) {
+        try {
+            long violationCount = violationMapper.selectCount(
+                    new LambdaQueryWrapper<ExecutionViolation>().eq(ExecutionViolation::getTaskId, task.getId()));
+            if (violationCount == 0) return;
+
+            List<ExecutionDetail> failedDetails = executionDetailMapper.selectList(
+                    new LambdaQueryWrapper<ExecutionDetail>()
+                            .eq(ExecutionDetail::getExecutionId, task.getExecutionId())
+                            .eq(ExecutionDetail::getQualityResult, "FAIL"));
+            if (failedDetails.isEmpty()) return;
+
+            WorkOrder order = new WorkOrder();
+            order.setOrderNo(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                    + String.format("%04d", (int) (Math.random() * 10000)));
+            order.setTitle(task.getTableName() + " 数据质量异常处置工单");
+            order.setStatus("PENDING");
+            order.setUrgency("NORMAL");
+            order.setIssueType("DATA_QUALITY");
+            order.setReportId(reportId);
+            order.setRuleGroupId(task.getRuleGroupId());
+            order.setTableName(task.getTableName());
+            order.setIssueDescription("主任务#" + task.getId() + "执行完成后发现" + violationCount + "条异常数据，涉及"
+                    + failedDetails.size() + "条规则不通过");
+            order.setCreatedBy("system");
+            workOrderMapper.insert(order);
+
+            for (ExecutionDetail d : failedDetails) {
+                WorkOrderIssue issue = new WorkOrderIssue();
+                issue.setOrderId(order.getId());
+                issue.setFieldName(d.getFieldName());
+                issue.setFieldCode(d.getFieldName());
+                issue.setIssueType(d.getRuleType());
+                issue.setRuleDescription(d.getRuleDescription());
+                issue.setIssueCount(d.getViolatedRows());
+                workOrderIssueMapper.insert(issue);
+            }
+
+            WorkOrderLog wlog = new WorkOrderLog();
+            wlog.setOrderId(order.getId());
+            wlog.setAction("CREATE");
+            wlog.setOperator("system");
+            wlog.setOperatorDept("系统");
+            wlog.setComment("主任务#" + task.getId() + "执行完成，检测到异常数据，自动创建处置工单");
+            workOrderLogMapper.insert(wlog);
+
+            log.info("Auto-created work order {} for task {} with {} violations", order.getId(), task.getId(), violationCount);
+        } catch (Exception e) {
+            log.error("Failed to auto-create work order for task {}: {}", task.getId(), e.getMessage());
+        }
     }
 
     private void failTask(ExecutionTask task, String message) {

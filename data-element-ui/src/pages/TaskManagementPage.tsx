@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Table, Button, Select, Space, Typography, Card, Statistic, Row, Col, Tag, Modal, message, Progress, Descriptions, Badge, Form, InputNumber, Input, DatePicker, Collapse, Popconfirm, Tooltip } from 'antd'
 import { PlayCircleOutlined, StopOutlined, ReloadOutlined, DashboardOutlined, EyeOutlined, ThunderboltOutlined, PlusOutlined, ClockCircleOutlined, FieldTimeOutlined, WarningOutlined, CloudServerOutlined, DatabaseOutlined, SettingOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { listRuleGroups, listDataSources, submitTaskAdvanced, cancelTask, cancelSubTask, getTask, listTasks, getSubTasks, getTaskSteps, getEngineStatus, updateSubTaskTimeout, generateReport, listViolations } from '../api'
+import { listRuleGroups, listDataSources, submitTaskAdvanced, cancelTask, cancelSubTask, getTask, listTasks, getSubTasks, getTaskSteps, getEngineStatus, updateSubTaskTimeout, generateReport, listViolations, getViolationSummary } from '../api'
 import type { RuleGroup, DataSourceConfig, ExecutionTask, ExecutionSubTask, ExecutionStepLog, EngineStatus, TaskCreateDTO } from '../types'
 
 const statusColorMap: Record<string, string> = { QUEUED: 'default', RUNNING: 'processing', COMPLETED: 'success', FAILED: 'error', CANCELLED: 'warning' }
@@ -22,6 +22,7 @@ export default function TaskManagementPage() {
   const [steps, setSteps] = useState<ExecutionStepLog[]>([])
   const [form] = Form.useForm()
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [vioSummary, setVioSummary] = useState<Record<string, unknown> | null>(null)
   const [violationModal, setViolationModal] = useState(false)
   const [violations, setViolations] = useState<Record<string, unknown>[]>([])
   const [violationLoading, setViolationLoading] = useState(false)
@@ -100,12 +101,13 @@ export default function TaskManagementPage() {
   }
 
   const showDetail = async (taskId: number) => {
-    const [taskRes, subRes, stepsRes] = await Promise.all([
-      getTask(taskId), getSubTasks(taskId), getTaskSteps(taskId)
+    const [taskRes, subRes, stepsRes, vioRes] = await Promise.all([
+      getTask(taskId), getSubTasks(taskId), getTaskSteps(taskId), getViolationSummary(taskId)
     ])
     if (taskRes.code === 200) setCurrentTask(taskRes.data)
     setSubTasks(subRes.data || [])
     setSteps(stepsRes.data || [])
+    if (vioRes.code === 200) setVioSummary(vioRes.data)
     setDetailModal(true)
   }
 
@@ -366,6 +368,27 @@ export default function TaskManagementPage() {
               status={currentTask.status === 'FAILED' ? 'exception' : currentTask.status === 'RUNNING' ? 'active' : undefined}
               format={() => `${currentTask.completedSubTasks || 0}/${currentTask.subTaskCount || 0} 子任务`}
               style={{ marginBottom: 16 }} />
+
+            {/* Violation Summary */}
+            {vioSummary && (vioSummary.totalViolations as number) > 0 && (
+              <Card size="small" style={{ marginBottom: 16, background: '#fff2f0', borderColor: '#ffccc7' }}
+                title={<><span style={{ color: '#ff4d4f' }}>异常数据汇总</span> <Tag color="red">{(vioSummary.totalViolations as number).toLocaleString()} 条异常</Tag>
+                  <Button type="link" size="small" onClick={() => currentTask && showViolations(currentTask.id)}>查看异常数据清单</Button></>}>
+                <Table size="small" pagination={false} dataSource={(vioSummary.ruleBreakdown as Record<string, unknown>[]) || []} rowKey="ruleId"
+                  columns={[
+                    { title: '字段', dataIndex: 'fieldName', width: 120 },
+                    { title: '规则类型', dataIndex: 'ruleType', width: 130, render: (v: string) => <Tag color="blue">{v}</Tag> },
+                    { title: '规则描述', dataIndex: 'ruleDescription', ellipsis: true },
+                    { title: '校验行数', dataIndex: 'totalRows', width: 90 },
+                    { title: '异常数据', dataIndex: 'violatedRows', width: 90,
+                      render: (v: number) => <span style={{ color: v > 0 ? '#ff4d4f' : '#52c41a', fontWeight: 'bold' }}>{v}</span> },
+                    { title: '合规率', dataIndex: 'complianceRate', width: 90,
+                      render: (v: number) => <span>{v}%</span> },
+                    { title: '结果', dataIndex: 'qualityResult', width: 70,
+                      render: (v: string) => v === 'PASS' ? <Tag color="green">通过</Tag> : <Tag color="red">不通过</Tag> },
+                  ]} />
+              </Card>
+            )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <Typography.Title level={5} style={{ margin: 0 }}>子任务列表</Typography.Title>

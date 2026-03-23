@@ -91,4 +91,9 @@ public class ExecutionTaskController {
         engine.updateSubTaskTimeout(taskId, timeoutSec);
         return R.ok(null);
     }
+
+    @GetMapping("/{taskId}/violation-summary")
+    public R<Map<String, Object>> violationSummary(@PathVariable Long taskId) {
+        return R.ok(engine.getViolationSummary(taskId));
+    }
 }

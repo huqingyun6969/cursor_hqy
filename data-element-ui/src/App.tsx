@@ -10,7 +10,9 @@ import {
   AlertOutlined,
   CloudServerOutlined,
   ThunderboltOutlined,
+  HomeOutlined,
 } from '@ant-design/icons'
+import DashboardPage from './pages/DashboardPage'
 import DataSourcePage from './pages/DataSourcePage'
 import RuleGroupPage from './pages/RuleGroupPage'
 import RuleDetailPage from './pages/RuleDetailPage'
@@ -24,6 +26,7 @@ import RuleTypeConfigPage from './pages/RuleTypeConfigPage'
 const { Header, Content, Sider } = Layout
 
 const menuItems = [
+  { key: '/', icon: <HomeOutlined />, label: '首页概览' },
   { key: '/datasource', icon: <DatabaseOutlined />, label: '数据源管理' },
   { key: '/rule-type', icon: <SettingOutlined />, label: '规则类型管理' },
   { key: '/rule-group', icon: <AuditOutlined />, label: '规则组管理' },
@@ -65,7 +68,7 @@ function App() {
         </Header>
         <Content style={{ margin: 24, padding: 24, background: '#fff', borderRadius: 8, minHeight: 360 }}>
           <Routes>
-            <Route path="/" element={<DataSourcePage />} />
+            <Route path="/" element={<DashboardPage />} />
             <Route path="/datasource" element={<DataSourcePage />} />
             <Route path="/rule-type" element={<RuleTypeConfigPage />} />
             <Route path="/rule-group" element={<RuleGroupPage />} />

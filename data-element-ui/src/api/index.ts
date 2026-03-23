@@ -73,6 +73,12 @@ export const getWorkOrder = (orderId: number) => http.get<R<WorkOrderVO>>(`/work
 export const listWorkOrders = () => http.get<R<WorkOrder[]>>('/work-order/list').then(r => r.data)
 export const workOrderAction = (orderId: number, data: Record<string, unknown>) => http.post<R<void>>(`/work-order/${orderId}/action`, data).then(r => r.data)
 
+// Dashboard
+export const getDashboardStats = () => http.get<R<Record<string, unknown>>>('/dashboard/stats').then(r => r.data)
+
+// Task violation summary
+export const getViolationSummary = (taskId: number) => http.get<R<Record<string, unknown>>>(`/task/${taskId}/violation-summary`).then(r => r.data)
+
 // Violations (异常数据)
 export const listViolations = (params: { taskId?: number; detailId?: number; fieldName?: string; current?: number; size?: number }) =>
   http.get<R<Record<string, unknown>>>('/violation/list', { params }).then(r => r.data)
