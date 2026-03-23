@@ -28,4 +28,20 @@ public class ExecutionTask {
     private LocalDateTime finishedAt;
     private Long durationMs;
     private String createdBy;
+
+    private Long dataSourceId;
+    private Long totalRows;
+    private Integer subTaskCount;
+    private Integer completedSubTasks;
+    private Integer batchSize;
+    private Integer maxConcurrentSubTasks;
+    private Integer maxSubTaskTimeoutSec;
+    private String specifiedFields;
+    private String timeFilterField;
+    private String timeRangeStart;
+    private String timeRangeEnd;
+    private String primaryKeyField;
+    private Long rowLimit;
+    private String powerjobInstanceId;
+    private String tableName;
 }

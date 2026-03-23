@@ -37,10 +37,25 @@ liteflow:
   rule-source: ""
 
 engine:
-  max-concurrent-tasks: 3
-  queue-capacity: 50
-  cpu-threshold: 90
-  memory-threshold: 90
+  max-concurrent-tasks: 10
+  queue-capacity: 100
+  cpu-threshold: 80
+  memory-threshold: 80
+  default-batch-size: 10000
+  default-max-concurrent-subtasks: 10
+  default-subtask-timeout-sec: 60
+  pool:
+    max-size: 10
+    min-idle: 2
+    idle-timeout: 60000
+    max-lifetime: 300000
+    connection-timeout: 30000
+
+powerjob:
+  enabled: false
+  server-address: 10.10.21.130:28089
+  app-name: mesadmin
+  app-secret: mesadmin
 
 logging:
   level:

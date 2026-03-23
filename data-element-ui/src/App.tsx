@@ -13,6 +13,7 @@ import DataSourcePage from './pages/DataSourcePage'
 import RuleGroupPage from './pages/RuleGroupPage'
 import RuleDetailPage from './pages/RuleDetailPage'
 import ExecutionPage from './pages/ExecutionPage'
+import TaskManagementPage from './pages/TaskManagementPage'
 import DictPage from './pages/DictPage'
 import ReportPage from './pages/ReportPage'
 import WorkOrderPage from './pages/WorkOrderPage'
@@ -23,7 +24,8 @@ const { Header, Content, Sider } = Layout
 const menuItems = [
   { key: '/datasource', icon: <DatabaseOutlined />, label: '数据源管理' },
   { key: '/rule-group', icon: <AuditOutlined />, label: '规则组管理' },
-  { key: '/execution', icon: <PlayCircleOutlined />, label: '规则执行' },
+  { key: '/task', icon: <PlayCircleOutlined />, label: '任务管理' },
+  { key: '/execution', icon: <PlayCircleOutlined />, label: '规则执行(旧)' },
   { key: '/report', icon: <FileTextOutlined />, label: '质量报告' },
   { key: '/work-order', icon: <AlertOutlined />, label: '问题处置工单' },
   { key: '/rule-type', icon: <SettingOutlined />, label: '规则类型管理' },
@@ -65,6 +67,7 @@ function App() {
             <Route path="/datasource" element={<DataSourcePage />} />
             <Route path="/rule-group" element={<RuleGroupPage />} />
             <Route path="/rule-group/:groupId/rules" element={<RuleDetailPage />} />
+            <Route path="/task" element={<TaskManagementPage />} />
             <Route path="/execution" element={<ExecutionPage />} />
             <Route path="/report" element={<ReportPage />} />
             <Route path="/work-order" element={<WorkOrderPage />} />

@@ -119,6 +119,13 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
+        <!-- PowerJob Worker (optional, enable via config) -->
+        <dependency>
+            <groupId>tech.powerjob</groupId>
+            <artifactId>powerjob-worker-spring-boot-starter</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

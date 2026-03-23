@@ -147,6 +147,20 @@ export interface ExecutionTask {
   threadName: string; cpuUsagePct: number; memoryUsageMb: number
   errorMessage: string; queuedAt: string; startedAt: string
   finishedAt: string; durationMs: number; createdBy: string
+  dataSourceId: number; totalRows: number; subTaskCount: number
+  completedSubTasks: number; batchSize: number; maxConcurrentSubTasks: number
+  maxSubTaskTimeoutSec: number; specifiedFields: string; timeFilterField: string
+  timeRangeStart: string; timeRangeEnd: string; primaryKeyField: string
+  rowLimit: number; powerjobInstanceId: string; tableName: string
+}
+
+export interface ExecutionSubTask {
+  id: number; taskId: number; subTaskIndex: number; status: string
+  offsetStart: number; offsetEnd: number; rowCount: number
+  processedRules: number; totalRules: number; violatedCount: number
+  passedCount: number; threadName: string; cpuUsagePct: number
+  memoryUsageMb: number; errorMessage: string; startedAt: string
+  finishedAt: string; durationMs: number
 }
 
 export interface ExecutionStepLog {
@@ -159,6 +173,28 @@ export interface ExecutionStepLog {
 export interface EngineStatus {
   activeThreads: number; poolSize: number; maxPoolSize: number
   queueSize: number; queueCapacity: number; completedTasks: number
-  cpuUsage: number; memoryUsedMb: number; memoryMaxMb: number
-  memoryUsagePct: number; overloaded: boolean
+  cpuUsage: number; heapUsedMb: number; heapMaxMb: number
+  heapUsagePct: number; nonHeapUsedMb: number; jvmTotalMb: number
+  jvmFreeMb: number; diskTotalMb: number; diskUsedMb: number
+  diskFreeMb: number; diskUsagePct: number; overloaded: boolean
+  connectionPools: Record<string, { active: number; idle: number; total: number; waiting: number; poolName: string }>
+  runningTaskCount: number; queuedTaskCount: number
+  cpuCores: number
+}
+
+export interface TaskCreateDTO {
+  ruleGroupId: number
+  dataSourceId?: number
+  tableName?: string
+  specifiedFields?: string
+  timeFilterField?: string
+  timeRangeStart?: string
+  timeRangeEnd?: string
+  primaryKeyField?: string
+  rowLimit?: number
+  batchSize?: number
+  maxConcurrentSubTasks?: number
+  maxSubTaskTimeoutSec?: number
+  createdBy?: string
+  powerjobInstanceId?: string
 }

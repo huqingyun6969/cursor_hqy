@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { R, DataSourceConfig, RuleGroup, RuleDefinition, DictTable, DictItem, ExecutionRecord, ExecutionDetail, ExecutionResultVO, QualityReportVO, QualityReport, WorkOrderVO, WorkOrder, RuleTypeConfig, RuleChainConfig, ExecutionTask, ExecutionStepLog, EngineStatus } from '../types'
+import type { R, DataSourceConfig, RuleGroup, RuleDefinition, DictTable, DictItem, ExecutionRecord, ExecutionDetail, ExecutionResultVO, QualityReportVO, QualityReport, WorkOrderVO, WorkOrder, RuleTypeConfig, RuleChainConfig, ExecutionTask, ExecutionSubTask, ExecutionStepLog, EngineStatus, TaskCreateDTO } from '../types'
 
 const http = axios.create({ baseURL: '/api', timeout: 60000 })
 http.interceptors.response.use((res) => res, (err) => { console.error('API Error:', err); return Promise.reject(err) })
@@ -43,14 +43,21 @@ export const executeRuleGroup = (ruleGroupId: number) => http.post<R<ExecutionRe
 export const listExecutionHistory = () => http.get<R<ExecutionRecord[]>>('/execution/history').then(r => r.data)
 export const getExecutionDetail = (executionId: number) => http.get<R<ExecutionDetail[]>>(`/execution/detail/${executionId}`).then(r => r.data)
 
-// Task Execution Engine
+// Task Execution Engine (enhanced)
+export const submitTaskAdvanced = (dto: TaskCreateDTO) =>
+  http.post<R<ExecutionTask>>('/task/submit', dto).then(r => r.data)
 export const submitTask = (ruleGroupId: number, createdBy?: string) =>
   http.post<R<ExecutionTask>>(`/task/submit/${ruleGroupId}${createdBy ? '?createdBy=' + createdBy : ''}`).then(r => r.data)
 export const cancelTask = (taskId: number) => http.post<R<boolean>>(`/task/cancel/${taskId}`).then(r => r.data)
+export const cancelSubTask = (subTaskId: number) => http.post<R<boolean>>(`/task/cancel-subtask/${subTaskId}`).then(r => r.data)
 export const getTask = (taskId: number) => http.get<R<ExecutionTask>>(`/task/${taskId}`).then(r => r.data)
 export const listTasks = (status?: string) => http.get<R<ExecutionTask[]>>(`/task/list${status ? '?status=' + status : ''}`).then(r => r.data)
+export const getSubTasks = (taskId: number) => http.get<R<ExecutionSubTask[]>>(`/task/${taskId}/sub-tasks`).then(r => r.data)
 export const getTaskSteps = (taskId: number) => http.get<R<ExecutionStepLog[]>>(`/task/${taskId}/steps`).then(r => r.data)
 export const getEngineStatus = () => http.get<R<EngineStatus>>('/task/engine-status').then(r => r.data)
+export const getSystemMetrics = () => http.get<R<Record<string, unknown>>>('/task/system-metrics').then(r => r.data)
+export const updateSubTaskTimeout = (taskId: number, timeoutSec: number) =>
+  http.post<R<void>>(`/task/${taskId}/update-timeout?timeoutSec=${timeoutSec}`).then(r => r.data)
 
 // Report
 export const generateReport = (ruleGroupId: number) => http.post<R<QualityReportVO>>(`/report/generate/${ruleGroupId}`).then(r => r.data)
@@ -58,11 +65,11 @@ export const getReport = (reportId: number) => http.get<R<QualityReportVO>>(`/re
 export const listReports = () => http.get<R<QualityReport[]>>('/report/list').then(r => r.data)
 
 // Work Order
-export const createWorkOrder = (data: any) => http.post<R<WorkOrderVO>>('/work-order/create', data).then(r => r.data)
+export const createWorkOrder = (data: Record<string, unknown>) => http.post<R<WorkOrderVO>>('/work-order/create', data).then(r => r.data)
 export const getWorkOrder = (orderId: number) => http.get<R<WorkOrderVO>>(`/work-order/${orderId}`).then(r => r.data)
 export const listWorkOrders = () => http.get<R<WorkOrder[]>>('/work-order/list').then(r => r.data)
-export const workOrderAction = (orderId: number, data: any) => http.post<R<void>>(`/work-order/${orderId}/action`, data).then(r => r.data)
+export const workOrderAction = (orderId: number, data: Record<string, unknown>) => http.post<R<void>>(`/work-order/${orderId}/action`, data).then(r => r.data)
 
 // Violations
 export const listViolations = (detailId: number, current: number, size: number) =>
-  http.get<R<any>>(`/violation/list?detailId=${detailId}&current=${current}&size=${size}`).then(r => r.data)
+  http.get<R<Record<string, unknown>>>(`/violation/list?detailId=${detailId}&current=${current}&size=${size}`).then(r => r.data)
