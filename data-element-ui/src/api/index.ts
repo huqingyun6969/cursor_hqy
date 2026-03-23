@@ -63,6 +63,9 @@ export const updateSubTaskTimeout = (taskId: number, timeoutSec: number) =>
 export const generateReport = (ruleGroupId: number) => http.post<R<QualityReportVO>>(`/report/generate/${ruleGroupId}`).then(r => r.data)
 export const getReport = (reportId: number) => http.get<R<QualityReportVO>>(`/report/${reportId}`).then(r => r.data)
 export const listReports = () => http.get<R<QualityReport[]>>('/report/list').then(r => r.data)
+export const exportReportPdf = (reportId: number) => {
+  window.open(`/api/report/export-pdf/${reportId}`, '_blank')
+}
 
 // Work Order
 export const createWorkOrder = (data: Record<string, unknown>) => http.post<R<WorkOrderVO>>('/work-order/create', data).then(r => r.data)

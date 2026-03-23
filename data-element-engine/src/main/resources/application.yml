@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: data-element-engine
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      continue-on-error: true
   datasource:
     url: jdbc:mysql://localhost:33306/data_element_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
     username: root
@@ -59,4 +64,4 @@ powerjob:
 
 logging:
   level:
-    com.example.ruleengine: DEBUG
+    com.iwhalecloud.dep.runengine: DEBUG

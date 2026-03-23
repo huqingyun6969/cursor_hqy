@@ -14,8 +14,6 @@ export interface DataSourceConfig {
   dbUrl: string
   dbUsername: string
   dbPassword: string
-  tableName: string
-  querySql?: string
   status: number
 }
 
@@ -26,6 +24,7 @@ export interface RuleGroup {
   dataSourceId: number
   tableName?: string
   tableLabel?: string
+  querySql?: string
   status: number
 }
 
@@ -37,6 +36,8 @@ export interface RuleDefinition {
   ruleType: string
   ruleParams?: string
   customSql?: string
+  scriptBody?: string
+  scriptLanguage?: string
   description?: string
   importanceLevel: string
   ruleWeight: number
@@ -116,6 +117,7 @@ export interface QualityReport {
   id: number; ruleGroupId: number; tableName: string; tableLabel: string
   totalScore: number; scoreLevel: string; totalRows: number
   totalRules: number; passedRules: number; failedRules: number; createdAt: string
+  taskId?: number
 }
 
 export interface WorkOrder {
@@ -152,6 +154,7 @@ export interface ExecutionTask {
   maxSubTaskTimeoutSec: number; specifiedFields: string; timeFilterField: string
   timeRangeStart: string; timeRangeEnd: string; primaryKeyField: string
   rowLimit: number; powerjobInstanceId: string; tableName: string
+  reportId: number
 }
 
 export interface ExecutionSubTask {

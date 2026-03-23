@@ -127,6 +127,7 @@ export default function TaskManagementPage() {
       )},
     { title: '来源', width: 70, render: (_: unknown, r: ExecutionTask) =>
       r.powerjobInstanceId ? <Tag color="purple">PowerJob</Tag> : <Tag>手动</Tag> },
+    { title: '质量报告', dataIndex: 'reportId', width: 80, render: (v: number) => v ? <Tag color="blue">#{v}</Tag> : '-' },
     { title: '耗时', dataIndex: 'durationMs', width: 80, render: (v: number) => v ? `${(v/1000).toFixed(1)}s` : '-' },
     { title: '提交时间', dataIndex: 'queuedAt', width: 160, ellipsis: true },
     { title: '操作', width: 150, fixed: 'right' as const, render: (_: unknown, r: ExecutionTask) => (

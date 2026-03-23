@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.example</groupId>
+    <groupId>com.iwhalecloud.dep</groupId>
     <artifactId>data-element-engine</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>data-element-engine</name>
@@ -117,6 +117,27 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
+        </dependency>
+
+        <!-- LiteFlow Script: GraalJS for JavaScript (ES6 support, JDK17) -->
+        <dependency>
+            <groupId>com.yomahub</groupId>
+            <artifactId>liteflow-script-graaljs</artifactId>
+            <version>${liteflow.version}</version>
+        </dependency>
+
+        <!-- LiteFlow Script: Java dynamic scripts (javax-pro) -->
+        <dependency>
+            <groupId>com.yomahub</groupId>
+            <artifactId>liteflow-script-javax-pro</artifactId>
+            <version>${liteflow.version}</version>
+        </dependency>
+
+        <!-- OpenPDF for quality report PDF export -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
         </dependency>
 
         <!-- PowerJob Worker (optional, enable via config) -->

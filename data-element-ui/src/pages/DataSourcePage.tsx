@@ -11,7 +11,7 @@ const dbTypeOptions: { value: DbType; label: string; color: string }[] = [
 ]
 
 const jdbcUrlPlaceholders: Record<DbType, string> = {
-  MYSQL: 'jdbc:mysql://127.0.0.1:33306/zsmartcity_auth?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false',
+  MYSQL: 'jdbc:mysql://127.0.0.1:33306/database?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false',
   ORACLE: 'jdbc:oracle:thin:@//host:1521/service_name',
   HIVE: 'jdbc:hive2://host:10000/database',
 }
@@ -32,8 +32,9 @@ export default function DataSourcePage() {
       const res = await testDataSource(values)
       if (res.code === 200) { message.success(res.data || '连接成功') }
       else { message.error(res.message || '连接失败') }
-    } catch (e: any) {
-      message.error(e?.response?.data?.message || '连接测试失败')
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } }
+      message.error(err?.response?.data?.message || '连接测试失败')
     } finally { setTesting(false) }
   }
 
@@ -84,7 +85,6 @@ export default function DataSourcePage() {
     { title: '名称', dataIndex: 'name', width: 160 },
     { title: '数据库类型', dataIndex: 'dbType', width: 110,
       render: (v: string) => <Tag color={dbTypeColorMap[v] || 'default'}>{v || 'MYSQL'}</Tag> },
-    { title: '表名', dataIndex: 'tableName', width: 160 },
     { title: 'JDBC URL', dataIndex: 'dbUrl', ellipsis: true },
     { title: '状态', dataIndex: 'status', width: 80,
       render: (v: number) => v === 1 ? '启用' : '禁用' },
@@ -143,12 +143,6 @@ export default function DataSourcePage() {
           </Form.Item>
           <Form.Item name="dbPassword" label="密码" rules={[{ required: true }]}>
             <Input.Password placeholder="数据库密码" />
-          </Form.Item>
-          <Form.Item name="tableName" label="表名" rules={[{ required: true }]}>
-            <Input placeholder="目标表名" />
-          </Form.Item>
-          <Form.Item name="querySql" label="自定义查询SQL（可选，优先于表名）">
-            <Input.TextArea placeholder="SELECT * FROM table WHERE ..." rows={3} />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue={1}>
             <Select options={[{ value: 1, label: '启用' }, { value: 0, label: '禁用' }]} />

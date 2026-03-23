@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Table, Button, Select, Space, Typography, Card, Tag, Modal, Progress, Divider, message } from 'antd'
-import { FileTextOutlined } from '@ant-design/icons'
-import { listRuleGroups, generateReport, getReport, listReports } from '../api'
+import { FileTextOutlined, FilePdfOutlined } from '@ant-design/icons'
+import { listRuleGroups, generateReport, getReport, listReports, exportReportPdf } from '../api'
 import type { RuleGroup, QualityReportVO, QualityReport } from '../types'
 
 const scoreLevelMap: Record<string, { text: string; color: string }> = {
@@ -63,8 +63,11 @@ export default function ReportPage() {
     { title: '通过', dataIndex: 'passedRules', width: 70, render: (v: number) => <Tag color="green">{v}</Tag> },
     { title: '失败', dataIndex: 'failedRules', width: 70, render: (v: number) => <Tag color={v > 0 ? 'red' : 'green'}>{v}</Tag> },
     { title: '生成时间', dataIndex: 'createdAt', width: 180 },
-    { title: '操作', width: 100, render: (_: unknown, record: QualityReport) => (
-      <Button type="link" onClick={() => showDetail(record.id)}>查看详情</Button>
+    { title: '操作', width: 180, render: (_: unknown, record: QualityReport) => (
+      <Space>
+        <Button type="link" onClick={() => showDetail(record.id)}>查看详情</Button>
+        <Button type="link" icon={<FilePdfOutlined />} onClick={() => exportReportPdf(record.id)}>导出PDF</Button>
+      </Space>
     )},
   ]
 
@@ -88,7 +91,10 @@ export default function ReportPage() {
       </Card>
 
       <Modal title={`${reportDetail?.tableName || ''}表质量分详情`} open={detailModal} onCancel={() => setDetailModal(false)}
-        footer={null} width={900} destroyOnClose>
+        footer={reportDetail ? [
+          <Button key="pdf" type="primary" icon={<FilePdfOutlined />} onClick={() => exportReportPdf(reportDetail.reportId)}>导出PDF</Button>,
+          <Button key="close" onClick={() => setDetailModal(false)}>关闭</Button>,
+        ] : null} width={900} destroyOnClose>
         {reportDetail && (
           <>
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
