@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Table, Button, Modal, Form, Input, Select, InputNumber, Space, Popconfirm, message, Typography, Tag, Tooltip } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined, ApartmentOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import { listRuleTypeConfigs, saveRuleTypeConfig, deleteRuleTypeConfig } from '../api'
 import type { RuleTypeConfig } from '../types'
 
@@ -16,6 +17,7 @@ export default function RuleTypeConfigPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [form] = Form.useForm()
   const [editingId, setEditingId] = useState<number | undefined>()
+  const navigate = useNavigate()
   const [descModal, setDescModal] = useState(false)
   const [descContent, setDescContent] = useState<{ title: string; desc: string }>({ title: '', desc: '' })
 
@@ -105,11 +107,14 @@ export default function RuleTypeConfigPage() {
           </Tooltip>
           <Tag>{data.length} 种规则类型</Tag>
         </Space>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => {
-          form.resetFields(); setEditingId(undefined); setModalOpen(true)
-        }}>
-          新增规则类型
-        </Button>
+        <Space>
+          <Button icon={<ApartmentOutlined />} onClick={() => navigate('/rule-orchestration')}>规则编排</Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => {
+            form.resetFields(); setEditingId(undefined); setModalOpen(true)
+          }}>
+            新增规则类型
+          </Button>
+        </Space>
       </div>
       <Table columns={columns} dataSource={data} rowKey="id" loading={loading} size="small"
         pagination={false} scroll={{ x: 1100, y: 600 }} />

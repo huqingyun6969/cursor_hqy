@@ -15,9 +15,12 @@ public class RuleChainController {
 
     @GetMapping("/list/{groupId}")
     public R<List<RuleChain>> list(@PathVariable Long groupId) {
-        return R.ok(mapper.selectList(new LambdaQueryWrapper<RuleChain>()
-                .eq(RuleChain::getRuleGroupId, groupId)
-                .orderByAsc(RuleChain::getCreatedAt)));
+        LambdaQueryWrapper<RuleChain> query = new LambdaQueryWrapper<>();
+        if (groupId != null && groupId > 0) {
+            query.eq(RuleChain::getRuleGroupId, groupId);
+        }
+        query.orderByDesc(RuleChain::getCreatedAt);
+        return R.ok(mapper.selectList(query));
     }
 
     @PostMapping("/save")

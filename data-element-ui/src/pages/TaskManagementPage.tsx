@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react'
 import { Table, Button, Select, Space, Typography, Card, Statistic, Row, Col, Tag, Modal, message, Progress, Descriptions, Badge, Form, InputNumber, Input, DatePicker, Collapse, Popconfirm, Tooltip } from 'antd'
 import { PlayCircleOutlined, StopOutlined, ReloadOutlined, DashboardOutlined, EyeOutlined, ThunderboltOutlined, PlusOutlined, ClockCircleOutlined, FieldTimeOutlined, WarningOutlined, CloudServerOutlined, DatabaseOutlined, SettingOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { listRuleGroups, listDataSources, submitTaskAdvanced, cancelTask, cancelSubTask, getTask, listTasks, getSubTasks, getTaskSteps, getEngineStatus, updateSubTaskTimeout, generateReport, listViolations, getViolationSummary } from '../api'
-import type { RuleGroup, DataSourceConfig, ExecutionTask, ExecutionSubTask, ExecutionStepLog, EngineStatus, TaskCreateDTO } from '../types'
+import { listRuleGroups, listDataSources, submitTaskAdvanced, cancelTask, cancelSubTask, getTask, listTasks, getSubTasks, getTaskSteps, getEngineStatus, updateSubTaskTimeout, generateReport, listViolations, getViolationSummary, getReport, exportReportPdf } from '../api'
+import type { RuleGroup, DataSourceConfig, ExecutionTask, ExecutionSubTask, ExecutionStepLog, EngineStatus, TaskCreateDTO, QualityReportVO } from '../types'
 
 const statusColorMap: Record<string, string> = { QUEUED: 'default', RUNNING: 'processing', COMPLETED: 'success', FAILED: 'error', CANCELLED: 'warning' }
 const statusTextMap: Record<string, string> = { QUEUED: '排队中', RUNNING: '执行中', COMPLETED: '已完成', FAILED: '失败', CANCELLED: '已取消' }
@@ -23,6 +23,8 @@ export default function TaskManagementPage() {
   const [form] = Form.useForm()
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [vioSummary, setVioSummary] = useState<Record<string, unknown> | null>(null)
+  const [reportModal, setReportModal] = useState(false)
+  const [reportDetail, setReportDetail] = useState<QualityReportVO | null>(null)
   const [violationModal, setViolationModal] = useState(false)
   const [violations, setViolations] = useState<Record<string, unknown>[]>([])
   const [violationLoading, setViolationLoading] = useState(false)
@@ -121,6 +123,11 @@ export default function TaskManagementPage() {
     setSteps(stepsRes.data || [])
   }
 
+  const showReport = async (reportId: number) => {
+    const res = await getReport(reportId)
+    if (res.code === 200) { setReportDetail(res.data); setReportModal(true) }
+  }
+
   const showViolations = async (taskId: number, page = 1) => {
     setViolationLoading(true)
     setViolationModal(true)
@@ -161,7 +168,7 @@ export default function TaskManagementPage() {
       r.powerjobInstanceId ? <Tag color="purple">PowerJob</Tag> : <Tag>手动</Tag> },
     { title: '质量报告', dataIndex: 'reportId', width: 100,
       render: (v: number, r: ExecutionTask) => {
-        if (v) return <Button type="link" size="small" onClick={() => window.open(`/report?id=${v}`, '_self')}>报告#{v}</Button>
+        if (v) return <Button type="link" size="small" onClick={() => showReport(v)}>查看报告</Button>
         if (r.status === 'COMPLETED') return <Button type="link" size="small" onClick={async () => {
           const res = await generateReport(r.ruleGroupId); if (res.code === 200) { message.success('报告已生成'); fetchAll() }
         }}>生成报告</Button>
@@ -450,6 +457,44 @@ export default function TaskManagementPage() {
             { title: '异常原因', dataIndex: 'violationReason', ellipsis: true },
             { title: '发现时间', dataIndex: 'createdAt', width: 170 },
           ]} />
+      </Modal>
+
+      {/* Report detail modal */}
+      <Modal title={`${reportDetail?.tableName || ''}质量报告详情`} open={reportModal}
+        onCancel={() => setReportModal(false)} width={900} destroyOnClose
+        footer={[
+          ...(reportDetail ? [<Button key="pdf" type="primary" onClick={() => exportReportPdf(reportDetail.reportId)}>导出PDF</Button>] : []),
+          <Button key="close" onClick={() => setReportModal(false)}>关闭</Button>,
+        ]}>
+        {reportDetail && (
+          <>
+            <div style={{ textAlign: 'center', padding: '16px 0' }}>
+              <Progress type="circle" percent={reportDetail.totalScore} size={160}
+                strokeColor={reportDetail.totalScore >= 90 ? '#52c41a' : reportDetail.totalScore >= 80 ? '#1890ff' : reportDetail.totalScore >= 60 ? '#faad14' : '#ff4d4f'}
+                format={() => <div><div style={{ fontSize: 28, fontWeight: 'bold' }}>{reportDetail.totalScore}分</div>
+                  <Tag color={reportDetail.scoreLevel === 'excellent' ? 'green' : reportDetail.scoreLevel === 'good' ? 'blue' : reportDetail.scoreLevel === 'medium' ? 'orange' : 'red'}>
+                    {reportDetail.scoreLevel === 'excellent' ? '优秀' : reportDetail.scoreLevel === 'good' ? '良好' : reportDetail.scoreLevel === 'medium' ? '中等' : '较差'}
+                  </Tag></div>} />
+            </div>
+            <Descriptions size="small" bordered column={4} style={{ marginBottom: 16 }}>
+              <Descriptions.Item label="数据行数">{reportDetail.totalRows?.toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="规则总数">{reportDetail.totalRules}</Descriptions.Item>
+              <Descriptions.Item label="通过">{reportDetail.passedRules}</Descriptions.Item>
+              <Descriptions.Item label="不通过">{reportDetail.failedRules}</Descriptions.Item>
+            </Descriptions>
+            {reportDetail.ruleDetails && (
+              <Table size="small" pagination={false} dataSource={reportDetail.ruleDetails} rowKey={(_, i) => String(i)}
+                columns={[
+                  { title: '校验规则', dataIndex: 'ruleType', width: 120 },
+                  { title: '绑定主体', dataIndex: 'fieldName', width: 150, render: (v: string, r: Record<string, unknown>) => (r as { ruleLevel?: string }).ruleLevel === 'TABLE' ? '/' : `【字段】${v}` },
+                  { title: '重要程度', dataIndex: 'importanceLevel', width: 80, render: (v: string) => v === 'IMPORTANT' ? <Tag color="red">重要</Tag> : <Tag>一般</Tag> },
+                  { title: '权重', dataIndex: 'ruleWeight', width: 60 },
+                  { title: '规则评分', dataIndex: 'ruleScore', width: 90, render: (v: number) => <span style={{ color: '#1890ff', fontWeight: 'bold' }}>{v?.toFixed(2)}</span> },
+                  { title: '异常数', dataIndex: 'violatedRows', width: 80, render: (v: number) => <span style={{ color: v > 0 ? '#ff4d4f' : '#52c41a' }}>{v}</span> },
+                ]} />
+            )}
+          </>
+        )}
       </Modal>
     </>
   )

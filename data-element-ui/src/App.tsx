@@ -22,6 +22,7 @@ import DictPage from './pages/DictPage'
 import ReportPage from './pages/ReportPage'
 import WorkOrderPage from './pages/WorkOrderPage'
 import RuleTypeConfigPage from './pages/RuleTypeConfigPage'
+import RuleOrchestrationPage from './pages/RuleOrchestrationPage'
 
 const { Header, Content, Sider } = Layout
 
@@ -71,6 +72,7 @@ function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/datasource" element={<DataSourcePage />} />
             <Route path="/rule-type" element={<RuleTypeConfigPage />} />
+            <Route path="/rule-orchestration" element={<RuleOrchestrationPage />} />
             <Route path="/rule-group" element={<RuleGroupPage />} />
             <Route path="/rule-group/:groupId/rules" element={<RuleDetailPage />} />
             <Route path="/task" element={<TaskManagementPage />} />
