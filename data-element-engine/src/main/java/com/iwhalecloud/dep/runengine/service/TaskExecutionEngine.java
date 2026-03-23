@@ -666,6 +666,7 @@ public class TaskExecutionEngine {
             case "LANDLINE" -> "landline";
             case "SOCIAL_CREDIT_CODE" -> "socialCreditCode";
             case "DATE_RANGE" -> "dateRange";
+            case "CUSTOM_SQL" -> "customSql";
             case "SCRIPT" -> "script";
             default -> throw new RuntimeException("Unknown rule type: " + ruleType);
         };
