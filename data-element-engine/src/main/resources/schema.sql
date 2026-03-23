@@ -34,10 +34,14 @@ CREATE TABLE IF NOT EXISTS `rule_group` (
 CREATE TABLE IF NOT EXISTS `rule_definition` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `rule_group_id` BIGINT NOT NULL COMMENT 'FK to rule_group',
+    `rule_level` VARCHAR(20) NOT NULL DEFAULT 'FIELD' COMMENT 'TABLE or FIELD level rule',
     `field_name` VARCHAR(200) NOT NULL COMMENT 'Column/field to validate',
-    `rule_type` VARCHAR(50) NOT NULL COMMENT 'Rule type: NOT_NULL, UNIQUE, LENGTH, REGEX, DATE_FORMAT, ID_CARD, PHONE, DOMAIN_CHECK, CUSTOM_SQL, TABLE_ROW_COUNT, ENCODING_RULE, INVALID_CONTENT',
+    `rule_type` VARCHAR(50) NOT NULL COMMENT 'Rule type',
     `rule_params` JSON DEFAULT NULL COMMENT 'Rule parameters as JSON',
+    `custom_sql` TEXT DEFAULT NULL COMMENT 'Custom SQL for this rule',
     `description` VARCHAR(500) DEFAULT NULL COMMENT 'Rule description',
+    `importance_level` VARCHAR(20) NOT NULL DEFAULT 'NORMAL' COMMENT 'IMPORTANT or NORMAL',
+    `rule_weight` INT NOT NULL DEFAULT 1 COMMENT 'Weight: IMPORTANT=3, NORMAL=1',
     `sort_order` INT NOT NULL DEFAULT 0 COMMENT 'Execution order',
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=enabled 0=disabled',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -46,6 +50,75 @@ CREATE TABLE IF NOT EXISTS `rule_definition` (
     KEY `idx_rule_group_id` (`rule_group_id`),
     KEY `idx_field_name` (`field_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Rule definition';
+
+-- Quality report
+CREATE TABLE IF NOT EXISTS `quality_report` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `rule_group_id` BIGINT NOT NULL,
+    `table_name` VARCHAR(200),
+    `table_label` VARCHAR(200),
+    `total_score` DECIMAL(8,2) NOT NULL DEFAULT 0,
+    `score_level` VARCHAR(20) COMMENT 'excellent/good/medium/poor',
+    `total_rows` BIGINT DEFAULT 0,
+    `total_rules` INT DEFAULT 0,
+    `passed_rules` INT DEFAULT 0,
+    `failed_rules` INT DEFAULT 0,
+    `execution_id` BIGINT,
+    `report_data` JSON COMMENT 'Full report data',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY `idx_rule_group` (`rule_group_id`),
+    KEY `idx_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Work order
+CREATE TABLE IF NOT EXISTS `work_order` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `order_no` VARCHAR(50) NOT NULL,
+    `title` VARCHAR(500) NOT NULL,
+    `status` VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    `urgency` VARCHAR(20) DEFAULT 'NORMAL',
+    `issue_type` VARCHAR(50) DEFAULT 'ACCURACY',
+    `report_id` BIGINT,
+    `rule_group_id` BIGINT,
+    `table_name` VARCHAR(200),
+    `data_source_unit` VARCHAR(200),
+    `issue_description` TEXT,
+    `issue_impact` TEXT,
+    `suggestion` TEXT,
+    `process_instance_id` VARCHAR(100),
+    `assignee` VARCHAR(100),
+    `created_by` VARCHAR(100),
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_order_no` (`order_no`),
+    KEY `idx_status` (`status`),
+    KEY `idx_report` (`report_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Work order issue items
+CREATE TABLE IF NOT EXISTS `work_order_issue` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `order_id` BIGINT NOT NULL,
+    `field_name` VARCHAR(200),
+    `field_code` VARCHAR(200),
+    `issue_type` VARCHAR(50),
+    `rule_description` VARCHAR(500),
+    `issue_count` BIGINT DEFAULT 0,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY `idx_order` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Work order flow log
+CREATE TABLE IF NOT EXISTS `work_order_log` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `order_id` BIGINT NOT NULL,
+    `action` VARCHAR(50) NOT NULL,
+    `operator` VARCHAR(100),
+    `operator_dept` VARCHAR(200),
+    `comment` TEXT,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY `idx_order` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Dictionary table for domain value validation
 CREATE TABLE IF NOT EXISTS `dict_table` (

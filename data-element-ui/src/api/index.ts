@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { R, DataSourceConfig, RuleGroup, RuleDefinition, RuleTypeOption, DictTable, DictItem, ExecutionRecord, ExecutionDetail, ExecutionResultVO } from '../types'
+import type { R, DataSourceConfig, RuleGroup, RuleDefinition, RuleTypeOption, DictTable, DictItem, ExecutionRecord, ExecutionDetail, ExecutionResultVO, QualityReportVO, QualityReport, WorkOrderVO, WorkOrder } from '../types'
 
 const http = axios.create({ baseURL: '/api', timeout: 60000 })
 
@@ -40,3 +40,14 @@ export const saveDictItems = (dictCode: string, items: DictItem[]) => http.post<
 export const executeRuleGroup = (ruleGroupId: number) => http.post<R<ExecutionResultVO>>(`/execution/run/${ruleGroupId}`).then(r => r.data)
 export const listExecutionHistory = () => http.get<R<ExecutionRecord[]>>('/execution/history').then(r => r.data)
 export const getExecutionDetail = (executionId: number) => http.get<R<ExecutionDetail[]>>(`/execution/detail/${executionId}`).then(r => r.data)
+
+// Report
+export const generateReport = (ruleGroupId: number) => http.post<R<QualityReportVO>>(`/report/generate/${ruleGroupId}`).then(r => r.data)
+export const getReport = (reportId: number) => http.get<R<QualityReportVO>>(`/report/${reportId}`).then(r => r.data)
+export const listReports = () => http.get<R<QualityReport[]>>('/report/list').then(r => r.data)
+
+// Work Order
+export const createWorkOrder = (data: any) => http.post<R<WorkOrderVO>>('/work-order/create', data).then(r => r.data)
+export const getWorkOrder = (orderId: number) => http.get<R<WorkOrderVO>>(`/work-order/${orderId}`).then(r => r.data)
+export const listWorkOrders = () => http.get<R<WorkOrder[]>>('/work-order/list').then(r => r.data)
+export const workOrderAction = (orderId: number, data: any) => http.post<R<void>>(`/work-order/${orderId}/action`, data).then(r => r.data)

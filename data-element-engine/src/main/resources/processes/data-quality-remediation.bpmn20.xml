@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://flowable.org/data-quality">
+
+    <process id="dataQualityRemediation" name="数据质量问题整改流程" isExecutable="true">
+
+        <startEvent id="start" name="发起整改"/>
+
+        <userTask id="submitFix" name="提交整改" flowable:assignee="${assignee}">
+            <documentation>数据源负责人提交整改方案</documentation>
+        </userTask>
+
+        <userTask id="reviewFix" name="审核整改" flowable:assignee="${reviewer}">
+            <documentation>信息中心审核整改结果</documentation>
+        </userTask>
+
+        <exclusiveGateway id="reviewGateway" name="审核结果"/>
+
+        <endEvent id="end" name="整改完成"/>
+
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="submitFix"/>
+        <sequenceFlow id="flow2" sourceRef="submitFix" targetRef="reviewFix"/>
+        <sequenceFlow id="flow3" sourceRef="reviewFix" targetRef="reviewGateway"/>
+        <sequenceFlow id="flow4" sourceRef="reviewGateway" targetRef="end">
+            <conditionExpression>${approved == true}</conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="flow5" sourceRef="reviewGateway" targetRef="submitFix">
+            <conditionExpression>${approved == false}</conditionExpression>
+        </sequenceFlow>
+    </process>
+</definitions>

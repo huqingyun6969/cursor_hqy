@@ -21,6 +21,7 @@
         <java.version>17</java.version>
         <liteflow.version>2.15.3.2</liteflow.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
+        <flowable.version>7.1.0</flowable.version>
     </properties>
 
     <dependencies>
@@ -88,6 +89,13 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <!-- Flowable 7 BPMN Process Engine -->
+        <dependency>
+            <groupId>org.flowable</groupId>
+            <artifactId>flowable-spring-boot-starter-process</artifactId>
+            <version>${flowable.version}</version>
         </dependency>
 
         <!-- HikariCP (included with spring-boot-starter-jdbc) -->
