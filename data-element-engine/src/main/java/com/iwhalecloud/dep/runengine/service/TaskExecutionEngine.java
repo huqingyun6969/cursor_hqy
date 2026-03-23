@@ -66,6 +66,7 @@ public class TaskExecutionEngine {
     private final ExecutionRecordMapper executionRecordMapper;
     private final ExecutionDetailMapper executionDetailMapper;
     private final ExecutionViolationMapper violationMapper;
+    private final QualityReportMapper qualityReportMapper;
     private final RuleGroupService ruleGroupService;
     private final RuleDefinitionService ruleDefinitionService;
     private final DataSourceConfigService dataSourceConfigService;
@@ -85,6 +86,7 @@ public class TaskExecutionEngine {
                                 ExecutionRecordMapper executionRecordMapper,
                                 ExecutionDetailMapper executionDetailMapper,
                                 ExecutionViolationMapper violationMapper,
+                                QualityReportMapper qualityReportMapper,
                                 RuleGroupService ruleGroupService,
                                 RuleDefinitionService ruleDefinitionService,
                                 DataSourceConfigService dataSourceConfigService,
@@ -98,6 +100,7 @@ public class TaskExecutionEngine {
         this.executionRecordMapper = executionRecordMapper;
         this.executionDetailMapper = executionDetailMapper;
         this.violationMapper = violationMapper;
+        this.qualityReportMapper = qualityReportMapper;
         this.ruleGroupService = ruleGroupService;
         this.ruleDefinitionService = ruleDefinitionService;
         this.dataSourceConfigService = dataSourceConfigService;
@@ -343,6 +346,17 @@ public class TaskExecutionEngine {
             task.setDurationMs(duration);
             task.setCpuUsagePct(resourceMonitor.getCpuUsage());
             task.setMemoryUsageMb(resourceMonitor.getUsedMemoryMb());
+
+            if ("COMPLETED".equals(task.getStatus())) {
+                try {
+                    Long reportId = generateReportForTask(task, record, rules);
+                    task.setReportId(reportId);
+                    log.info("Auto-generated quality report {} for task {}", reportId, taskId);
+                } catch (Exception re) {
+                    log.error("Failed to auto-generate report for task {}: {}", taskId, re.getMessage());
+                }
+            }
+
             taskMapper.updateById(task);
 
         } catch (Exception e) {
@@ -438,8 +452,26 @@ public class TaskExecutionEngine {
                 fieldViolatedMap.computeIfAbsent(key, k -> new AtomicLong(0)).addAndGet(violated);
                 fieldTotalMap.computeIfAbsent(key, k -> new AtomicLong(0)).addAndGet(dataRows.size());
 
-                if (violated > 0) subViolated += violated;
-                else subPassed++;
+                if (violated > 0) {
+                    subViolated += violated;
+                    for (int vi = 0; vi < Math.min(ruleContext.getSampleViolations().size(), 50); vi++) {
+                        try {
+                            ExecutionViolation ev = new ExecutionViolation();
+                            ev.setExecutionId(task.getExecutionId());
+                            ev.setTaskId(task.getId());
+                            ev.setRuleType(rule.getRuleType());
+                            ev.setFieldName(rule.getFieldName());
+                            ev.setRowIndex(sub.getOffsetStart() + vi);
+                            ev.setFieldValue(null);
+                            ev.setViolationReason(ruleContext.getSampleViolations().get(vi));
+                            violationMapper.insert(ev);
+                        } catch (Exception ve) {
+                            log.debug("Failed to insert violation record: {}", ve.getMessage());
+                        }
+                    }
+                } else {
+                    subPassed++;
+                }
 
                 processedRules++;
 
@@ -627,6 +659,47 @@ public class TaskExecutionEngine {
             task.setMaxSubTaskTimeoutSec(newTimeoutSec);
             taskMapper.updateById(task);
         }
+    }
+
+    private Long generateReportForTask(ExecutionTask task, ExecutionRecord record, List<RuleDefinition> rules) {
+        List<ExecutionDetail> details = executionDetailMapper.selectList(
+                new LambdaQueryWrapper<ExecutionDetail>().eq(ExecutionDetail::getExecutionId, record.getId()));
+
+        int totalWeight = 0;
+        BigDecimal weightedSum = BigDecimal.ZERO;
+        for (int i = 0; i < details.size() && i < rules.size(); i++) {
+            ExecutionDetail d = details.get(i);
+            RuleDefinition r = rules.size() > i ? rules.get(i) : null;
+            int weight = (r != null && r.getRuleWeight() != null) ? r.getRuleWeight() : 1;
+            totalWeight += weight;
+            BigDecimal score = d.getComplianceRate() != null ? d.getComplianceRate() : BigDecimal.ZERO;
+            weightedSum = weightedSum.add(score.multiply(BigDecimal.valueOf(weight)));
+        }
+
+        BigDecimal totalScore = totalWeight > 0
+                ? weightedSum.divide(BigDecimal.valueOf(totalWeight), 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        String scoreLevel;
+        if (totalScore.compareTo(BigDecimal.valueOf(90)) >= 0) scoreLevel = "excellent";
+        else if (totalScore.compareTo(BigDecimal.valueOf(80)) >= 0) scoreLevel = "good";
+        else if (totalScore.compareTo(BigDecimal.valueOf(60)) >= 0) scoreLevel = "medium";
+        else scoreLevel = "poor";
+
+        QualityReport report = new QualityReport();
+        report.setRuleGroupId(task.getRuleGroupId());
+        report.setTaskId(task.getId());
+        report.setTableName(task.getTableName());
+        report.setTotalScore(totalScore);
+        report.setScoreLevel(scoreLevel);
+        report.setTotalRows(task.getTotalRows());
+        report.setTotalRules(record.getTotalRules());
+        report.setPassedRules(record.getPassedRules());
+        report.setFailedRules(record.getFailedRules());
+        report.setExecutionId(record.getId());
+        qualityReportMapper.insert(report);
+
+        return report.getId();
     }
 
     private void failTask(ExecutionTask task, String message) {

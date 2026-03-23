@@ -15,14 +15,25 @@ public class ViolationController {
 
     @GetMapping("/list")
     public R<Page<ExecutionViolation>> list(
-            @RequestParam Long detailId,
+            @RequestParam(required = false) Long detailId,
+            @RequestParam(required = false) Long taskId,
+            @RequestParam(required = false) String fieldName,
             @RequestParam(defaultValue = "1") Long current,
             @RequestParam(defaultValue = "20") Long size) {
-        Page<ExecutionViolation> page = mapper.selectPage(
-                new Page<>(current, size),
-                new LambdaQueryWrapper<ExecutionViolation>()
-                        .eq(ExecutionViolation::getDetailId, detailId)
-                        .orderByAsc(ExecutionViolation::getRowIndex));
-        return R.ok(page);
+        LambdaQueryWrapper<ExecutionViolation> query = new LambdaQueryWrapper<>();
+        if (detailId != null) query.eq(ExecutionViolation::getDetailId, detailId);
+        if (taskId != null) query.eq(ExecutionViolation::getTaskId, taskId);
+        if (fieldName != null && !fieldName.isEmpty()) query.eq(ExecutionViolation::getFieldName, fieldName);
+        query.orderByAsc(ExecutionViolation::getRowIndex);
+        return R.ok(mapper.selectPage(new Page<>(current, size), query));
+    }
+
+    @GetMapping("/count")
+    public R<Long> count(@RequestParam(required = false) Long taskId,
+                          @RequestParam(required = false) Long detailId) {
+        LambdaQueryWrapper<ExecutionViolation> query = new LambdaQueryWrapper<>();
+        if (taskId != null) query.eq(ExecutionViolation::getTaskId, taskId);
+        if (detailId != null) query.eq(ExecutionViolation::getDetailId, detailId);
+        return R.ok(mapper.selectCount(query));
     }
 }

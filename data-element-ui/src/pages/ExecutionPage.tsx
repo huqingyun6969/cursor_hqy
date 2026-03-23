@@ -165,7 +165,7 @@ export default function ExecutionPage() {
                 description: (
                   <Space size="large">
                     <span>总行数: {s.totalRows || '-'}</span>
-                    <span>违规: <span style={{ color: (s.violatedRows || 0) > 0 ? '#ff4d4f' : '#52c41a' }}>{s.violatedRows ?? '-'}</span></span>
+                    <span>异常: <span style={{ color: (s.violatedRows || 0) > 0 ? '#ff4d4f' : '#52c41a' }}>{s.violatedRows ?? '-'}</span></span>
                     <span>耗时: {s.durationMs || '-'}ms</span>
                     {s.memoryDeltaMb ? <span>内存: {s.memoryDeltaMb}MB</span> : null}
                     {s.errorMessage && <Typography.Text type="danger">{s.errorMessage}</Typography.Text>}

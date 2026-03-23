@@ -10,6 +10,7 @@ public class ExecutionViolation {
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long executionId;
+    private Long taskId;
     private Long detailId;
     private String ruleType;
     private String fieldName;

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Table, Button, Select, Space, Typography, Card, Statistic, Row, Col, Tag, Modal, message, Progress, Descriptions, Badge, Form, InputNumber, Input, DatePicker, Collapse, Popconfirm, Tooltip } from 'antd'
 import { PlayCircleOutlined, StopOutlined, ReloadOutlined, DashboardOutlined, EyeOutlined, ThunderboltOutlined, PlusOutlined, ClockCircleOutlined, FieldTimeOutlined, WarningOutlined, CloudServerOutlined, DatabaseOutlined, SettingOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import { listRuleGroups, listDataSources, submitTaskAdvanced, cancelTask, cancelSubTask, getTask, listTasks, getSubTasks, getTaskSteps, getEngineStatus, updateSubTaskTimeout } from '../api'
+import { listRuleGroups, listDataSources, submitTaskAdvanced, cancelTask, cancelSubTask, getTask, listTasks, getSubTasks, getTaskSteps, getEngineStatus, updateSubTaskTimeout, generateReport, listViolations } from '../api'
 import type { RuleGroup, DataSourceConfig, ExecutionTask, ExecutionSubTask, ExecutionStepLog, EngineStatus, TaskCreateDTO } from '../types'
 
 const statusColorMap: Record<string, string> = { QUEUED: 'default', RUNNING: 'processing', COMPLETED: 'success', FAILED: 'error', CANCELLED: 'warning' }
@@ -22,6 +22,10 @@ export default function TaskManagementPage() {
   const [steps, setSteps] = useState<ExecutionStepLog[]>([])
   const [form] = Form.useForm()
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [violationModal, setViolationModal] = useState(false)
+  const [violations, setViolations] = useState<Record<string, unknown>[]>([])
+  const [violationLoading, setViolationLoading] = useState(false)
+  const [violationTotal, setViolationTotal] = useState(0)
 
   const fetchAll = async () => {
     setLoading(true)
@@ -115,6 +119,19 @@ export default function TaskManagementPage() {
     setSteps(stepsRes.data || [])
   }
 
+  const showViolations = async (taskId: number, page = 1) => {
+    setViolationLoading(true)
+    setViolationModal(true)
+    try {
+      const res = await listViolations({ taskId, current: page, size: 20 })
+      if (res.code === 200) {
+        const pg = res.data as { records: Record<string, unknown>[]; total: number }
+        setViolations(pg.records || [])
+        setViolationTotal(pg.total || 0)
+      }
+    } finally { setViolationLoading(false) }
+  }
+
   const handleUpdateTimeout = async (taskId: number, sec: number) => {
     await updateSubTaskTimeout(taskId, sec)
     message.success(`子任务超时已更新为 ${sec} 秒`)
@@ -140,7 +157,14 @@ export default function TaskManagementPage() {
       )},
     { title: '来源', width: 70, render: (_: unknown, r: ExecutionTask) =>
       r.powerjobInstanceId ? <Tag color="purple">PowerJob</Tag> : <Tag>手动</Tag> },
-    { title: '质量报告', dataIndex: 'reportId', width: 80, render: (v: number) => v ? <Tag color="blue">#{v}</Tag> : '-' },
+    { title: '质量报告', dataIndex: 'reportId', width: 100,
+      render: (v: number, r: ExecutionTask) => {
+        if (v) return <Button type="link" size="small" onClick={() => window.open(`/report?id=${v}`, '_self')}>报告#{v}</Button>
+        if (r.status === 'COMPLETED') return <Button type="link" size="small" onClick={async () => {
+          const res = await generateReport(r.ruleGroupId); if (res.code === 200) { message.success('报告已生成'); fetchAll() }
+        }}>生成报告</Button>
+        return '-'
+      }},
     { title: '耗时', dataIndex: 'durationMs', width: 80, render: (v: number) => v ? `${(v/1000).toFixed(1)}s` : '-' },
     { title: '提交时间', dataIndex: 'queuedAt', width: 160, ellipsis: true },
     { title: '操作', width: 150, fixed: 'right' as const, render: (_: unknown, r: ExecutionTask) => (
@@ -162,8 +186,10 @@ export default function TaskManagementPage() {
     { title: '数据范围', width: 140, render: (_: unknown, r: ExecutionSubTask) => `${r.offsetStart} - ${r.offsetEnd}` },
     { title: '实际行数', dataIndex: 'rowCount', width: 90 },
     { title: '已执行规则', width: 100, render: (_: unknown, r: ExecutionSubTask) => `${r.processedRules}/${r.totalRules}` },
-    { title: '违规数', dataIndex: 'violatedCount', width: 80,
-      render: (v: number) => <span style={{ color: v > 0 ? '#ff4d4f' : '#52c41a' }}>{v}</span> },
+    { title: '异常数据', dataIndex: 'violatedCount', width: 90,
+      render: (v: number) => v > 0
+        ? <Button type="link" size="small" danger style={{ padding: 0 }} onClick={() => currentTask && showViolations(currentTask.id)}>{v}条</Button>
+        : <span style={{ color: '#52c41a' }}>0</span> },
     { title: '线程', dataIndex: 'threadName', width: 120, ellipsis: true },
     { title: 'CPU%', dataIndex: 'cpuUsagePct', width: 70, render: (v: number) => v?.toFixed(1) || '-' },
     { title: '内存(MB)', dataIndex: 'memoryUsageMb', width: 80 },
@@ -370,7 +396,7 @@ export default function TaskManagementPage() {
                     { title: '规则类型', dataIndex: 'ruleType', width: 100 },
                     { title: '字段', dataIndex: 'fieldName', width: 100 },
                     { title: '总行数', dataIndex: 'totalRows', width: 80 },
-                    { title: '违规', dataIndex: 'violatedRows', width: 80,
+                    { title: '异常数', dataIndex: 'violatedRows', width: 80,
                       render: (v: number) => <span style={{ color: v > 0 ? '#ff4d4f' : '#52c41a' }}>{v}</span> },
                     { title: '耗时(ms)', dataIndex: 'durationMs', width: 80 },
                     { title: '状态', dataIndex: 'status', width: 80 },
@@ -386,6 +412,21 @@ export default function TaskManagementPage() {
             )}
           </>
         )}
+      </Modal>
+
+      {/* Violation drill-down modal */}
+      <Modal title="异常数据清单" open={violationModal} onCancel={() => setViolationModal(false)}
+        footer={<Button onClick={() => setViolationModal(false)}>关闭</Button>} width={1000} destroyOnClose>
+        <Table size="small" loading={violationLoading} dataSource={violations} rowKey="id"
+          pagination={{ total: violationTotal, pageSize: 20, onChange: (p) => currentTask && showViolations(currentTask.id, p) }}
+          columns={[
+            { title: '行号', dataIndex: 'rowIndex', width: 70 },
+            { title: '字段', dataIndex: 'fieldName', width: 120 },
+            { title: '规则类型', dataIndex: 'ruleType', width: 120 },
+            { title: '异常字段值', dataIndex: 'fieldValue', width: 150, render: (v: string) => v || '-' },
+            { title: '异常原因', dataIndex: 'violationReason', ellipsis: true },
+            { title: '发现时间', dataIndex: 'createdAt', width: 170 },
+          ]} />
       </Modal>
     </>
   )
