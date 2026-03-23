@@ -18,4 +18,5 @@ public class TaskCreateDTO {
     private Integer maxSubTaskTimeoutSec;
     private String createdBy;
     private String powerjobInstanceId;
+    private String cronExpression;
 }

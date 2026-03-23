@@ -45,4 +45,5 @@ public class ExecutionTask {
     private String powerjobInstanceId;
     private String tableName;
     private Long reportId;
+    private String cronExpression;
 }

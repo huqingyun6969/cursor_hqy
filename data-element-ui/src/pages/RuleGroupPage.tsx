@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Table, Button, Modal, Form, Input, Select, Space, Popconfirm, message, Typography } from 'antd'
+import { Table, Button, Modal, Form, Input, Select, Space, Popconfirm, message, Typography, Tag } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { listRuleGroups, saveRuleGroup, deleteRuleGroup, listDataSources } from '../api'
@@ -52,24 +52,26 @@ export default function RuleGroupPage() {
   const dsMap = new Map(dataSources.map(d => [d.id, d.name]))
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', width: 60 },
-    { title: '名称', dataIndex: 'name', width: 200 },
-    { title: '校验表名', dataIndex: 'tableName', width: 180 },
-    { title: '表中文名', dataIndex: 'tableLabel', width: 180 },
-    { title: '数据源', dataIndex: 'dataSourceId', width: 140,
+    { title: 'ID', dataIndex: 'id', width: 50 },
+    { title: '名称', dataIndex: 'name', width: 160 },
+    { title: '校验表名', dataIndex: 'tableName', width: 160 },
+    { title: '表中文名', dataIndex: 'tableLabel', width: 140 },
+    { title: '查询字段', dataIndex: 'specifiedFields', width: 160, ellipsis: true,
+      render: (v: string) => v ? <Typography.Text code style={{ fontSize: 11 }}>{v}</Typography.Text> : <Tag>SELECT *</Tag> },
+    { title: '数据源', dataIndex: 'dataSourceId', width: 120,
       render: (v: number) => dsMap.get(v) || v },
-    { title: '状态', dataIndex: 'status', width: 80,
-      render: (v: number) => v === 1 ? '启用' : '禁用' },
+    { title: '状态', dataIndex: 'status', width: 60,
+      render: (v: number) => v === 1 ? <Tag color="green">启用</Tag> : <Tag color="red">禁用</Tag> },
     {
-      title: '操作', width: 240,
+      title: '操作', width: 220,
       render: (_: unknown, record: RuleGroup) => (
         <Space>
-          <Button type="link" icon={<SettingOutlined />} onClick={() => navigate(`/rule-group/${record.id}/rules`)}>
+          <Button type="link" size="small" icon={<SettingOutlined />} onClick={() => navigate(`/rule-group/${record.id}/rules`)}>
             配置规则
           </Button>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
           <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id!)}>
-            <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -84,11 +86,11 @@ export default function RuleGroupPage() {
           新增规则组
         </Button>
       </div>
-      <Table columns={columns} dataSource={data} rowKey="id" loading={loading} size="middle" />
+      <Table columns={columns} dataSource={data} rowKey="id" loading={loading} size="small" />
 
       <Modal title={editingId ? '编辑规则组' : '新增规则组'} open={modalOpen}
         onOk={handleSave} onCancel={() => { setModalOpen(false); form.resetFields() }}
-        width={560} destroyOnClose>
+        width={620} destroyOnClose>
         <Form form={form} layout="vertical">
           <Form.Item name="name" label="名称" rules={[{ required: true }]}>
             <Input placeholder="规则组名称" />
@@ -100,11 +102,20 @@ export default function RuleGroupPage() {
             <Select placeholder="选择数据源" showSearch optionFilterProp="label"
               options={dataSources.map(d => ({ value: d.id, label: d.name }))} />
           </Form.Item>
-          <Form.Item name="tableName" label="校验目标表名" rules={[{ required: true, message: '请输入表名' }]}>
-            <Input placeholder="如 ODS_SLXY_QYJCXX" />
+          <Form.Item name="tableName" label="校验目标表名" rules={[{ required: true, message: '请输入目标表名' }]}>
+            <Input placeholder="如 bfm_user, ODS_SLXY_QYJCXX" />
           </Form.Item>
           <Form.Item name="tableLabel" label="表中文名称">
-            <Input placeholder="如 水运工程建设信用企业登记信息" />
+            <Input placeholder="如 用户表, 企业基础信息表" />
+          </Form.Item>
+          <Form.Item name="specifiedFields" label="查询字段（指定列，逗号分隔）"
+            extra="不填则默认 SELECT *，建议指定需要校验的字段以提升性能">
+            <Input placeholder="如: id,name,phone,id_card,create_time" />
+          </Form.Item>
+          <Form.Item name="querySql" label="自定义查询SQL（可选，优先于表名）"
+            extra="填写后将忽略表名和查询字段配置，直接执行此SQL获取数据">
+            <Input.TextArea placeholder="如: SELECT id,name,phone FROM bfm_user WHERE status=1" rows={3}
+              style={{ fontFamily: 'monospace' }} />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue={1}>
             <Select options={[{ value: 1, label: '启用' }, { value: 0, label: '禁用' }]} />

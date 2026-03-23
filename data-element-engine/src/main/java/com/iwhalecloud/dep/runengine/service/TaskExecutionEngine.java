@@ -157,13 +157,18 @@ public class TaskExecutionEngine {
         task.setBatchSize(batchSize);
         task.setMaxConcurrentSubTasks(maxConcSub);
         task.setMaxSubTaskTimeoutSec(subTimeout);
-        task.setSpecifiedFields(dto.getSpecifiedFields());
+        String fields = dto.getSpecifiedFields();
+        if ((fields == null || fields.isEmpty()) && group.getSpecifiedFields() != null && !group.getSpecifiedFields().isEmpty()) {
+            fields = group.getSpecifiedFields();
+        }
+        task.setSpecifiedFields(fields);
         task.setTimeFilterField(dto.getTimeFilterField());
         task.setTimeRangeStart(dto.getTimeRangeStart());
         task.setTimeRangeEnd(dto.getTimeRangeEnd());
         task.setPrimaryKeyField(dto.getPrimaryKeyField());
         task.setRowLimit(dto.getRowLimit());
         task.setPowerjobInstanceId(dto.getPowerjobInstanceId());
+        task.setCronExpression(dto.getCronExpression());
         task.setQueuedAt(LocalDateTime.now());
         task.setCreatedBy(dto.getCreatedBy());
         taskMapper.insert(task);

@@ -49,15 +49,16 @@ export default function RuleTypeConfigPage() {
 
   const columns = [
     { title: '排序', dataIndex: 'sortOrder', width: 50 },
-    { title: '类型编码', dataIndex: 'typeCode', width: 170,
+    { title: '类型编码', dataIndex: 'typeCode', width: 220,
       render: (v: string) => (
-        <Space size={4}>
+        <span style={{ whiteSpace: 'nowrap' }}>
           <Typography.Text code style={{ fontSize: 12 }}>{v}</Typography.Text>
+          {' '}
           {BUILTIN_TYPES.has(v) ? <Tag color="green" style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px' }}>内置</Tag>
             : <Tag color="orange" style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px' }}>自定义</Tag>}
-        </Space>
+        </span>
       )},
-    { title: '类型名称', dataIndex: 'typeName', width: 140 },
+    { title: '类型名称', dataIndex: 'typeName', width: 130 },
     { title: '规则级别', dataIndex: 'ruleLevel', width: 80,
       render: (v: string) => v === 'TABLE' ? <Tag color="purple">表级</Tag> : <Tag color="cyan">字段级</Tag> },
     { title: '描述', dataIndex: 'description', ellipsis: true },

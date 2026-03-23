@@ -16,6 +16,7 @@ public class RuleGroup {
     private String tableName;
     private String tableLabel;
     private String querySql;
+    private String specifiedFields;
     private Integer status;
 
     @TableField(fill = FieldFill.INSERT)

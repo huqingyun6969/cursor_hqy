@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Table, Button, Select, Space, Typography, Card, Statistic, Row, Col, Tag, Modal, message, Progress, Descriptions, Badge, Form, InputNumber, Input, DatePicker, Collapse, Popconfirm, Tooltip } from 'antd'
-import { PlayCircleOutlined, StopOutlined, ReloadOutlined, DashboardOutlined, EyeOutlined, ThunderboltOutlined, PlusOutlined, ClockCircleOutlined, FieldTimeOutlined, WarningOutlined, CloudServerOutlined, DatabaseOutlined } from '@ant-design/icons'
+import { PlayCircleOutlined, StopOutlined, ReloadOutlined, DashboardOutlined, EyeOutlined, ThunderboltOutlined, PlusOutlined, ClockCircleOutlined, FieldTimeOutlined, WarningOutlined, CloudServerOutlined, DatabaseOutlined, SettingOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import { listRuleGroups, listDataSources, submitTaskAdvanced, cancelTask, cancelSubTask, getTask, listTasks, getSubTasks, getTaskSteps, getEngineStatus, updateSubTaskTimeout } from '../api'
 import type { RuleGroup, DataSourceConfig, ExecutionTask, ExecutionSubTask, ExecutionStepLog, EngineStatus, TaskCreateDTO } from '../types'
 
@@ -8,6 +9,7 @@ const statusColorMap: Record<string, string> = { QUEUED: 'default', RUNNING: 'pr
 const statusTextMap: Record<string, string> = { QUEUED: '排队中', RUNNING: '执行中', COMPLETED: '已完成', FAILED: '失败', CANCELLED: '已取消' }
 
 export default function TaskManagementPage() {
+  const navigate = useNavigate()
   const [groups, setGroups] = useState<RuleGroup[]>([])
   const [dataSources, setDataSources] = useState<DataSourceConfig[]>([])
   const [tasks, setTasks] = useState<ExecutionTask[]>([])
@@ -57,6 +59,7 @@ export default function TaskManagementPage() {
         maxConcurrentSubTasks: values.maxConcurrentSubTasks,
         maxSubTaskTimeoutSec: values.maxSubTaskTimeoutSec,
         createdBy: values.createdBy || 'system',
+        cronExpression: values.cronExpression,
       }
       const res = await submitTaskAdvanced(dto)
       if (res.code === 200) {
@@ -64,7 +67,17 @@ export default function TaskManagementPage() {
         setCreateModal(false)
         form.resetFields()
         fetchAll()
-      } else message.error(res.message)
+      } else if (res.message && res.message.includes('No rules defined')) {
+        const groupId = dto.ruleGroupId
+        Modal.warning({
+          title: '该规则组尚未配置规则',
+          content: '请先为规则组配置校验规则后再提交任务',
+          okText: '去配置规则',
+          onOk: () => { setCreateModal(false); navigate(`/rule-group/${groupId}/rules`) },
+        })
+      } else {
+        message.error(res.message)
+      }
     } catch (e) {
       console.error(e)
     }
@@ -226,7 +239,7 @@ export default function TaskManagementPage() {
             <Col span={12}>
               <Form.Item name="dataSourceId" label="数据源（可选，覆盖规则组默认）">
                 <Select placeholder="使用规则组默认数据源" allowClear showSearch optionFilterProp="label"
-                  options={dataSources.map(d => ({ value: d.id, label: `${d.name} (${d.tableName})` }))} />
+                  options={dataSources.map(d => ({ value: d.id, label: d.name }))} />
               </Form.Item>
             </Col>
           </Row>
@@ -271,7 +284,7 @@ export default function TaskManagementPage() {
               </Form.Item>
             </Col>
           </Row>
-          <Collapse ghost items={[{ key: '1', label: '高级设置', children: (
+          <Collapse ghost items={[{ key: '1', label: '高级设置', children: (<>
             <Row gutter={16}>
               <Col span={8}>
                 <Form.Item name="batchSize" label={<Tooltip title="每个子任务一次处理的数据行数">子任务批次大小</Tooltip>}>
@@ -289,7 +302,15 @@ export default function TaskManagementPage() {
                 </Form.Item>
               </Col>
             </Row>
-          )}]} />
+            <Row gutter={16}>
+              <Col span={24}>
+                <Form.Item name="cronExpression" label="Cron 定时表达式（可选，不填则立即执行一次）"
+                  extra="格式: 秒 分 时 日 月 周，如: 0 0 2 * * ? 表示每天凌晨2点执行">
+                  <Input placeholder="如: 0 0 2 * * ? (每天凌晨2点)" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </>)}]} />
         </Form>
       </Modal>
 

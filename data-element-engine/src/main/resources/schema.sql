@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `dep_rule_group` (
     `table_name` VARCHAR(200) DEFAULT NULL COMMENT 'Target table to validate',
     `table_label` VARCHAR(200) DEFAULT NULL,
     `query_sql` TEXT DEFAULT NULL COMMENT 'Custom query SQL (optional, overrides table_name)',
+    `specified_fields` TEXT DEFAULT NULL COMMENT 'Query columns, comma-separated. Default * if empty',
     `status` TINYINT NOT NULL DEFAULT 1,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -209,6 +210,7 @@ CREATE TABLE IF NOT EXISTS `dep_execution_task` (
     `powerjob_instance_id` VARCHAR(100),
     `table_name` VARCHAR(200),
     `report_id` BIGINT,
+    `cron_expression` VARCHAR(100) DEFAULT NULL COMMENT 'Cron expression for scheduled execution',
     PRIMARY KEY (`id`),
     KEY `idx_status` (`status`),
     KEY `idx_rule_group` (`rule_group_id`)

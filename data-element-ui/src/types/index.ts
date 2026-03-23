@@ -25,6 +25,7 @@ export interface RuleGroup {
   tableName?: string
   tableLabel?: string
   querySql?: string
+  specifiedFields?: string
   status: number
 }
 
@@ -154,7 +155,7 @@ export interface ExecutionTask {
   maxSubTaskTimeoutSec: number; specifiedFields: string; timeFilterField: string
   timeRangeStart: string; timeRangeEnd: string; primaryKeyField: string
   rowLimit: number; powerjobInstanceId: string; tableName: string
-  reportId: number
+  reportId: number; cronExpression: string
 }
 
 export interface ExecutionSubTask {
@@ -200,4 +201,5 @@ export interface TaskCreateDTO {
   maxSubTaskTimeoutSec?: number
   createdBy?: string
   powerjobInstanceId?: string
+  cronExpression?: string
 }
