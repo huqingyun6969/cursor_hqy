@@ -42,4 +42,28 @@ public class DataSourceController {
         dataSourceConfigService.removeById(id);
         return R.ok();
     }
+
+    @PostMapping("/test")
+    public R<String> testConnection(@RequestBody DataSourceConfigDTO dto) {
+        try {
+            String driverClass;
+            String url = dto.getDbUrl().toLowerCase();
+            if (url.startsWith("jdbc:mysql:")) driverClass = "com.mysql.cj.jdbc.Driver";
+            else if (url.startsWith("jdbc:oracle:")) driverClass = "oracle.jdbc.OracleDriver";
+            else if (url.startsWith("jdbc:hive2:")) driverClass = "org.apache.hive.jdbc.HiveDriver";
+            else return R.fail("不支持的JDBC URL类型");
+
+            var ds = new org.springframework.jdbc.datasource.DriverManagerDataSource();
+            ds.setUrl(dto.getDbUrl());
+            ds.setUsername(dto.getDbUsername());
+            ds.setPassword(dto.getDbPassword());
+            ds.setDriverClassName(driverClass);
+            var jdbc = new org.springframework.jdbc.core.JdbcTemplate(ds);
+            jdbc.setQueryTimeout(10);
+            jdbc.queryForObject("SELECT 1", Integer.class);
+            return R.ok("连接成功");
+        } catch (Exception e) {
+            return R.fail("连接失败: " + e.getMessage());
+        }
+    }
 }

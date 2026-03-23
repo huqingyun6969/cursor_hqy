@@ -16,6 +16,7 @@ public class RuleTypeConfig {
     private String defaultParams;
     private Integer needsParams;
     private String paramTemplate;
+    private String dictCode;
     private Integer status;
     private Integer sortOrder;
     @TableField(fill = FieldFill.INSERT)

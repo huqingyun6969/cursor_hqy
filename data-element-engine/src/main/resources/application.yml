@@ -36,6 +36,12 @@ liteflow:
   print-execution-log: true
   rule-source: ""
 
+engine:
+  max-concurrent-tasks: 3
+  queue-capacity: 50
+  cpu-threshold: 90
+  memory-threshold: 90
+
 logging:
   level:
     com.example.ruleengine: DEBUG
