@@ -241,6 +241,7 @@ public class RuleExecutionServiceImpl implements RuleExecutionService {
     private String getComponentId(String ruleType) {
         return switch (ruleType) {
             case "NOT_NULL" -> "notNull";
+            case "IS_NULL" -> "isNull";
             case "UNIQUE" -> "unique";
             case "LENGTH" -> "length";
             case "REGEX" -> "regex";

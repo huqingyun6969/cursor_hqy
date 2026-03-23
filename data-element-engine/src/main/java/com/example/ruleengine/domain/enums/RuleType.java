@@ -2,6 +2,7 @@ package com.example.ruleengine.domain.enums;
 
 public enum RuleType {
     NOT_NULL("非空校验"),
+    IS_NULL("空值校验"),
     UNIQUE("唯一性校验"),
     LENGTH("长度校验"),
     REGEX("正则表达式校验"),

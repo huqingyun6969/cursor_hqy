@@ -10,6 +10,8 @@ public class RuleGroupDTO {
     private String name;
     private String description;
     private Long dataSourceId;
+    private String tableName;
+    private String tableLabel;
     private Integer status;
     private List<RuleDefinitionDTO> rules;
 }
