@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { R, DataSourceConfig, RuleGroup, RuleDefinition, RuleTypeOption, DictTable, DictItem, ExecutionRecord, ExecutionDetail, ExecutionResultVO, QualityReportVO, QualityReport, WorkOrderVO, WorkOrder } from '../types'
+import type { R, DataSourceConfig, RuleGroup, RuleDefinition, RuleTypeOption, DictTable, DictItem, ExecutionRecord, ExecutionDetail, ExecutionResultVO, QualityReportVO, QualityReport, WorkOrderVO, WorkOrder, RuleTypeConfig, RuleChainConfig } from '../types'
 
 const http = axios.create({ baseURL: '/api', timeout: 60000 })
 
@@ -51,3 +51,17 @@ export const createWorkOrder = (data: any) => http.post<R<WorkOrderVO>>('/work-o
 export const getWorkOrder = (orderId: number) => http.get<R<WorkOrderVO>>(`/work-order/${orderId}`).then(r => r.data)
 export const listWorkOrders = () => http.get<R<WorkOrder[]>>('/work-order/list').then(r => r.data)
 export const workOrderAction = (orderId: number, data: any) => http.post<R<void>>(`/work-order/${orderId}/action`, data).then(r => r.data)
+
+// Rule Type Config
+export const listRuleTypeConfigs = () => http.get<R<RuleTypeConfig[]>>('/rule-type/list').then(r => r.data)
+export const saveRuleTypeConfig = (data: RuleTypeConfig) => http.post<R<void>>('/rule-type/save', data).then(r => r.data)
+export const deleteRuleTypeConfig = (id: number) => http.delete<R<void>>(`/rule-type/${id}`).then(r => r.data)
+
+// Rule Chain
+export const listRuleChains = (groupId: number) => http.get<R<RuleChainConfig[]>>(`/rule-chain/list/${groupId}`).then(r => r.data)
+export const saveRuleChain = (data: RuleChainConfig) => http.post<R<void>>('/rule-chain/save', data).then(r => r.data)
+export const deleteRuleChain = (id: number) => http.delete<R<void>>(`/rule-chain/${id}`).then(r => r.data)
+
+// Violations
+export const listViolations = (detailId: number, current: number, size: number) =>
+  http.get<R<any>>(`/violation/list?detailId=${detailId}&current=${current}&size=${size}`).then(r => r.data)

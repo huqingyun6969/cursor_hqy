@@ -2,26 +2,14 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Table, Button, Modal, Form, Input, Select, InputNumber, Space, Popconfirm, message, Typography, Card, Tag } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons'
-import { listRules, saveRule, deleteRule, listRuleTypes, getRuleGroup } from '../api'
-import type { RuleDefinition, RuleTypeOption, RuleGroup } from '../types'
-
-const ruleParamsHelp: Record<string, string> = {
-  LENGTH: '{"min":3,"max":50} 或 {"exact":18}',
-  REGEX: '{"pattern":"^[A-Z]\\\\d{9}$"}',
-  DATE_FORMAT: '{"format":"yyyy-MM-dd","minDate":"1970-01-01"}',
-  DOMAIN_CHECK: '{"dictCode":"TABLE_19"}',
-  TABLE_ROW_COUNT: '{"minRows":0}',
-  ENCODING_RULE: '{"pattern":"^[A-Z]\\\\d{9}$"}',
-  INVALID_CONTENT: '{"minChineseLen":1,"minCharLen":3}',
-  DATE_RANGE: '{"format":"yyyy-MM-dd","minDate":"1949-10-01"}',
-  CUSTOM_SQL: '自定义SQL在下方填写',
-}
+import { listRules, saveRule, deleteRule, listRuleTypeConfigs, getRuleGroup } from '../api'
+import type { RuleDefinition, RuleTypeConfig, RuleGroup } from '../types'
 
 export default function RuleDetailPage() {
   const { groupId } = useParams<{ groupId: string }>()
   const navigate = useNavigate()
   const [rules, setRules] = useState<RuleDefinition[]>([])
-  const [ruleTypes, setRuleTypes] = useState<RuleTypeOption[]>([])
+  const [ruleTypes, setRuleTypes] = useState<RuleTypeConfig[]>([])
   const [group, setGroup] = useState<RuleGroup | null>(null)
   const [loading, setLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -35,7 +23,7 @@ export default function RuleDetailPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [rulesRes, typesRes, groupRes] = await Promise.all([listRules(gid), listRuleTypes(), getRuleGroup(gid)])
+      const [rulesRes, typesRes, groupRes] = await Promise.all([listRules(gid), listRuleTypeConfigs(), getRuleGroup(gid)])
       setRules(rulesRes.data || [])
       setRuleTypes(typesRes.data || [])
       setGroup(groupRes.data)
@@ -71,7 +59,8 @@ export default function RuleDetailPage() {
     fetchData()
   }
 
-  const typeMap = new Map(ruleTypes.map(t => [t.value, t.label]))
+  const typeMap = new Map(ruleTypes.map(t => [t.typeCode, t.typeName]))
+  const typeConfigMap = new Map(ruleTypes.map(t => [t.typeCode, t]))
 
   const columns = [
     { title: '序号', dataIndex: 'sortOrder', width: 50 },
@@ -131,18 +120,29 @@ export default function RuleDetailPage() {
             <Input placeholder={selectedLevel === 'TABLE' ? '表标识，如 /' : '数据库字段名称，如 CORPNAME'} />
           </Form.Item>
           <Form.Item name="ruleType" label="规则类型" rules={[{ required: true }]}>
-            <Select placeholder="选择规则类型"
-              options={ruleTypes.map(t => ({ value: t.value, label: `${t.label} (${t.value})` }))}
-              onChange={(v) => setSelectedType(v)} />
+            <Select placeholder="选择规则类型" showSearch optionFilterProp="label"
+              options={ruleTypes.filter(t => t.status === 1).map(t => ({
+                value: t.typeCode,
+                label: `${t.typeName} (${t.typeCode})`,
+              }))}
+              onChange={(v: string) => {
+                setSelectedType(v)
+                const cfg = typeConfigMap.get(v)
+                if (cfg && !cfg.needsParams) {
+                  form.setFieldsValue({ ruleParams: '{}' })
+                }
+              }} />
           </Form.Item>
           <Form.Item name="description" label="规则描述">
             <Input.TextArea placeholder="例: CORPNAME重复率=0%" rows={2} />
           </Form.Item>
           <Form.Item name="ruleParams" label={
             <span>规则参数 (JSON)
-              {selectedType && ruleParamsHelp[selectedType] && <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
-                提示: {ruleParamsHelp[selectedType]}
-              </Typography.Text>}
+              {selectedType && (() => {
+                const cfg = typeConfigMap.get(selectedType)
+                const hint = cfg?.needsParams ? cfg.paramTemplate : '无需参数(默认{})'
+                return <Typography.Text type="secondary" style={{ marginLeft: 8 }}>提示: {hint}</Typography.Text>
+              })()}
             </span>
           }>
             <Input.TextArea placeholder='例如: {"min":3,"max":50}' rows={2} />

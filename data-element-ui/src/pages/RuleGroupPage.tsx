@@ -54,9 +54,10 @@ export default function RuleGroupPage() {
   const columns = [
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: '名称', dataIndex: 'name', width: 200 },
-    { title: '数据源', dataIndex: 'dataSourceId', width: 180,
+    { title: '校验表名', dataIndex: 'tableName', width: 180 },
+    { title: '表中文名', dataIndex: 'tableLabel', width: 180 },
+    { title: '数据源', dataIndex: 'dataSourceId', width: 140,
       render: (v: number) => dsMap.get(v) || v },
-    { title: '描述', dataIndex: 'description', ellipsis: true },
     { title: '状态', dataIndex: 'status', width: 80,
       render: (v: number) => v === 1 ? '启用' : '禁用' },
     {
@@ -96,8 +97,14 @@ export default function RuleGroupPage() {
             <Input.TextArea placeholder="描述" rows={2} />
           </Form.Item>
           <Form.Item name="dataSourceId" label="数据源" rules={[{ required: true, message: '请选择数据源' }]}>
-            <Select placeholder="选择数据源"
+            <Select placeholder="选择数据源" showSearch optionFilterProp="label"
               options={dataSources.map(d => ({ value: d.id, label: d.name }))} />
+          </Form.Item>
+          <Form.Item name="tableName" label="校验目标表名" rules={[{ required: true, message: '请输入表名' }]}>
+            <Input placeholder="如 ODS_SLXY_QYJCXX" />
+          </Form.Item>
+          <Form.Item name="tableLabel" label="表中文名称">
+            <Input placeholder="如 水运工程建设信用企业登记信息" />
           </Form.Item>
           <Form.Item name="status" label="状态" initialValue={1}>
             <Select options={[{ value: 1, label: '启用' }, { value: 0, label: '禁用' }]} />

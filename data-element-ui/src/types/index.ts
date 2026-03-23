@@ -26,9 +26,47 @@ export interface RuleGroup {
   name: string
   description?: string
   dataSourceId: number
+  tableName?: string
+  tableLabel?: string
   status: number
   createdAt?: string
   updatedAt?: string
+}
+
+export interface RuleTypeConfig {
+  id?: number
+  typeCode: string
+  typeName: string
+  ruleLevel: string
+  description?: string
+  defaultParams?: string
+  needsParams: number
+  paramTemplate?: string
+  status: number
+  sortOrder: number
+}
+
+export interface RuleChainConfig {
+  id?: number
+  ruleGroupId: number
+  chainName: string
+  fieldName?: string
+  chainEl: string
+  logicType: string
+  description?: string
+  status: number
+}
+
+export interface ExecutionViolationItem {
+  id: number
+  executionId: number
+  detailId: number
+  ruleType: string
+  fieldName: string
+  rowIndex: number
+  rowData: string
+  fieldValue: string
+  violationReason: string
 }
 
 export interface RuleDefinition {
