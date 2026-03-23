@@ -1,9 +1,48 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Table, Button, Modal, Form, Input, Select, InputNumber, Space, Popconfirm, message, Typography, Card, Tag } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Select, InputNumber, Space, Popconfirm, message, Typography, Card, Tag, Alert } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined, CodeOutlined } from '@ant-design/icons'
 import { listRules, saveRule, deleteRule, listRuleTypeConfigs, getRuleGroup } from '../api'
 import type { RuleDefinition, RuleTypeConfig, RuleGroup } from '../types'
+
+const SCRIPT_JS_EXAMPLE = `// JavaScript 动态脚本示例 (ES6, GraalJS引擎)
+// ctx 是 RuleContext 对象，可获取数据行和当前规则
+var ctx = this.getContextBean(Java.type('com.iwhalecloud.dep.runengine.liteflow.context.RuleContext').class);
+var fieldName = ctx.getCurrentRule().getFieldName();
+var rows = ctx.getDataRows();
+var violated = 0;
+for (var i = 0; i < rows.size(); i++) {
+    var value = rows.get(i).get(fieldName);
+    if (value == null || value.toString().trim() === '') {
+        violated++;
+        ctx.addViolation("字段 " + fieldName + " 值为空");
+    }
+}
+ctx.setViolatedRows(violated);`
+
+const SCRIPT_JAVA_EXAMPLE = `// Java 动态脚本示例 (javax-pro引擎)
+import com.iwhalecloud.dep.runengine.liteflow.context.RuleContext;
+import com.yomahub.liteflow.core.NodeComponent;
+import java.util.List;
+import java.util.Map;
+
+public class DynamicRule extends NodeComponent {
+    @Override
+    public void process() throws Exception {
+        RuleContext ctx = this.getContextBean(RuleContext.class);
+        String fieldName = ctx.getCurrentRule().getFieldName();
+        List<Map<String, Object>> rows = ctx.getDataRows();
+        long violated = 0;
+        for (Map<String, Object> row : rows) {
+            Object value = row.get(fieldName);
+            if (value == null || value.toString().trim().isEmpty()) {
+                violated++;
+                ctx.addViolation("字段 " + fieldName + " 值为空");
+            }
+        }
+        ctx.setViolatedRows(violated);
+    }
+}`
 
 export default function RuleDetailPage() {
   const { groupId } = useParams<{ groupId: string }>()
@@ -19,6 +58,7 @@ export default function RuleDetailPage() {
   const [selectedLevel, setSelectedLevel] = useState<string>('FIELD')
 
   const gid = Number(groupId)
+  const isScriptType = selectedType === 'SCRIPT'
 
   const fetchData = async () => {
     setLoading(true)
@@ -64,24 +104,24 @@ export default function RuleDetailPage() {
 
   const columns = [
     { title: '序号', dataIndex: 'sortOrder', width: 50 },
-    { title: '规则级别', dataIndex: 'ruleLevel', width: 90,
+    { title: '规则级别', dataIndex: 'ruleLevel', width: 80,
       render: (v: string) => v === 'TABLE' ? <Tag color="purple">表级</Tag> : <Tag color="cyan">字段级</Tag> },
-    { title: '字段名', dataIndex: 'fieldName', width: 140 },
+    { title: '字段名', dataIndex: 'fieldName', width: 130 },
     { title: '规则类型', dataIndex: 'ruleType', width: 130,
-      render: (v: string) => <Tag color="blue">{typeMap.get(v) || v}</Tag> },
+      render: (v: string) => <Tag color={v === 'SCRIPT' ? 'geekblue' : 'blue'}>{typeMap.get(v) || v}</Tag> },
     { title: '描述', dataIndex: 'description', ellipsis: true },
-    { title: '重要程度', dataIndex: 'importanceLevel', width: 90,
+    { title: '重要程度', dataIndex: 'importanceLevel', width: 80,
       render: (v: string) => v === 'IMPORTANT' ? <Tag color="red">重要</Tag> : <Tag>一般</Tag> },
-    { title: '权重', dataIndex: 'ruleWeight', width: 60 },
-    { title: '自定义SQL', dataIndex: 'customSql', width: 100, ellipsis: true,
-      render: (v: string) => v ? <Tag color="orange">有</Tag> : '-' },
+    { title: '权重', dataIndex: 'ruleWeight', width: 50 },
+    { title: '脚本', dataIndex: 'scriptBody', width: 70,
+      render: (v: string, r: RuleDefinition) => v ? <Tag color="geekblue" icon={<CodeOutlined />}>{r.scriptLanguage || 'java'}</Tag> : '-' },
     { title: '状态', dataIndex: 'status', width: 60,
       render: (v: number) => v === 1 ? <Tag color="green">启用</Tag> : <Tag color="red">禁用</Tag> },
     { title: '操作', width: 140, render: (_: unknown, record: RuleDefinition) => (
       <Space>
-        <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
+        <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
         <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id!)}>
-          <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+          <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
         </Popconfirm>
       </Space>
     )},
@@ -92,23 +132,23 @@ export default function RuleDetailPage() {
       <Space style={{ marginBottom: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/rule-group')}>返回</Button>
         <Typography.Title level={5} style={{ margin: 0 }}>
-          规则组: {group?.name || groupId} - 规则配置
+          规则组: {group?.name || groupId} {group?.tableName && <Tag>{group.tableName}</Tag>}
         </Typography.Title>
       </Space>
       <Card size="small" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>共 {rules.length} 条规则</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>共 <strong>{rules.length}</strong> 条规则</span>
           <Button type="primary" icon={<PlusOutlined />}
             onClick={() => { form.resetFields(); setEditingId(undefined); setSelectedType(''); setSelectedLevel('FIELD'); setModalOpen(true) }}>
             新增规则
           </Button>
         </div>
       </Card>
-      <Table columns={columns} dataSource={rules} rowKey="id" loading={loading} size="middle" pagination={{ pageSize: 20 }} />
+      <Table columns={columns} dataSource={rules} rowKey="id" loading={loading} size="small" pagination={{ pageSize: 20 }} />
 
       <Modal title={editingId ? '编辑规则' : '新增规则'} open={modalOpen}
         onOk={handleSave} onCancel={() => { setModalOpen(false); form.resetFields() }}
-        width={720} destroyOnClose>
+        width={800} destroyOnClose>
         <Form form={form} layout="vertical">
           <Form.Item name="ruleLevel" label="规则级别" initialValue="FIELD" rules={[{ required: true }]}>
             <Select onChange={(v) => setSelectedLevel(v)} options={[
@@ -131,25 +171,64 @@ export default function RuleDetailPage() {
                 if (cfg && !cfg.needsParams) {
                   form.setFieldsValue({ ruleParams: '{}' })
                 }
+                if (v === 'SCRIPT') {
+                  form.setFieldsValue({ scriptLanguage: 'java' })
+                }
               }} />
           </Form.Item>
           <Form.Item name="description" label="规则描述">
             <Input.TextArea placeholder="例: CORPNAME重复率=0%" rows={2} />
           </Form.Item>
-          <Form.Item name="ruleParams" label={
-            <span>规则参数 (JSON)
-              {selectedType && (() => {
-                const cfg = typeConfigMap.get(selectedType)
-                const hint = cfg?.needsParams ? cfg.paramTemplate : '无需参数(默认{})'
-                return <Typography.Text type="secondary" style={{ marginLeft: 8 }}>提示: {hint}</Typography.Text>
-              })()}
-            </span>
-          }>
-            <Input.TextArea placeholder='例如: {"min":3,"max":50}' rows={2} />
-          </Form.Item>
-          <Form.Item name="customSql" label="自定义SQL（可选，直接执行此SQL进行校验）">
-            <Input.TextArea placeholder={'SELECT COUNT(*) FROM table WHERE ...\n或\nSELECT ROUND((COUNT(*) - COUNT(DISTINCT ID)) / COUNT(*) * 100, 2) AS result FROM table'} rows={4} />
-          </Form.Item>
+
+          {/* Script-specific fields */}
+          {isScriptType && (
+            <>
+              <Alert type="info" showIcon style={{ marginBottom: 16 }}
+                message="动态脚本规则"
+                description="选择脚本语言后，在下方代码编辑区编写校验逻辑。脚本中通过 RuleContext 获取数据行并设置违规数。" />
+              <Form.Item name="scriptLanguage" label="脚本语言" rules={[{ required: isScriptType, message: '请选择脚本语言' }]}>
+                <Select options={[
+                  { value: 'java', label: 'Java (javax-pro引擎，推荐)' },
+                  { value: 'js', label: 'JavaScript (GraalJS引擎，支持ES6)' },
+                ]} />
+              </Form.Item>
+              <Form.Item name="scriptBody" label={
+                <Space>
+                  <span>脚本代码</span>
+                  <Button size="small" type="link" onClick={() => {
+                    const lang = form.getFieldValue('scriptLanguage') || 'java'
+                    form.setFieldsValue({ scriptBody: lang === 'js' ? SCRIPT_JS_EXAMPLE : SCRIPT_JAVA_EXAMPLE })
+                  }}>插入示例代码</Button>
+                </Space>
+              } rules={[{ required: isScriptType, message: '请编写脚本代码' }]}>
+                <Input.TextArea
+                  rows={14}
+                  style={{ fontFamily: 'Consolas, Monaco, "Courier New", monospace', fontSize: 13, background: '#1e1e1e', color: '#d4d4d4' }}
+                  placeholder="在此编写校验脚本代码..." />
+              </Form.Item>
+            </>
+          )}
+
+          {/* Standard rule params */}
+          {!isScriptType && (
+            <>
+              <Form.Item name="ruleParams" label={
+                <span>规则参数 (JSON)
+                  {selectedType && (() => {
+                    const cfg = typeConfigMap.get(selectedType)
+                    const hint = cfg?.needsParams ? cfg.paramTemplate : '无需参数(默认{})'
+                    return <Typography.Text type="secondary" style={{ marginLeft: 8 }}>提示: {hint}</Typography.Text>
+                  })()}
+                </span>
+              }>
+                <Input.TextArea placeholder='例如: {"min":3,"max":50}' rows={2} />
+              </Form.Item>
+              <Form.Item name="customSql" label="自定义SQL（可选）">
+                <Input.TextArea placeholder="SELECT COUNT(*) FROM table WHERE ..." rows={3} />
+              </Form.Item>
+            </>
+          )}
+
           <Form.Item name="importanceLevel" label="重要程度" initialValue="NORMAL">
             <Select onChange={(v) => { form.setFieldsValue({ ruleWeight: v === 'IMPORTANT' ? 3 : 1 }) }}
               options={[

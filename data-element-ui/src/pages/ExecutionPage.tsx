@@ -68,17 +68,17 @@ export default function ExecutionPage() {
     { title: 'ID', dataIndex: 'id', width: 60 },
     { title: '规则组', dataIndex: 'ruleGroupName', width: 180, ellipsis: true },
     { title: '状态', dataIndex: 'status', width: 90,
-      render: (v: string) => <Badge status={statusColorMap[v] as any} text={statusTextMap[v] || v} /> },
+      render: (v: string) => <Badge status={statusColorMap[v] as 'default'} text={statusTextMap[v] || v} /> },
     { title: '进度', dataIndex: 'progress', width: 140,
       render: (v: number, r: ExecutionTask) => (
-        <Progress percent={v} size="small" status={r.status === 'FAILED' ? 'exception' : r.status === 'RUNNING' ? 'active' : undefined}
+        <Progress percent={v || 0} size="small" status={r.status === 'FAILED' ? 'exception' : r.status === 'RUNNING' ? 'active' : undefined}
           format={() => `${r.completedRules || 0}/${r.totalRules || 0}`} />
       )},
     { title: '当前步骤', dataIndex: 'currentStep', width: 160, ellipsis: true },
     { title: '线程', dataIndex: 'threadName', width: 120, ellipsis: true },
-    { title: 'CPU%', dataIndex: 'cpuUsagePct', width: 70, render: (v: number) => v?.toFixed(1) },
-    { title: '内存(MB)', dataIndex: 'memoryUsageMb', width: 80 },
-    { title: '耗时(ms)', dataIndex: 'durationMs', width: 90 },
+    { title: 'CPU%', dataIndex: 'cpuUsagePct', width: 70, render: (v: number) => v?.toFixed(1) || '-' },
+    { title: '内存(MB)', dataIndex: 'memoryUsageMb', width: 80, render: (v: number) => v || '-' },
+    { title: '耗时(ms)', dataIndex: 'durationMs', width: 90, render: (v: number) => v || '-' },
     { title: '提交时间', dataIndex: 'queuedAt', width: 170, ellipsis: true },
     { title: '操作', width: 160, render: (_: unknown, r: ExecutionTask) => (
       <Space>
@@ -94,7 +94,6 @@ export default function ExecutionPage() {
     <>
       <Typography.Title level={5}>规则执行中心</Typography.Title>
 
-      {/* Engine Status Dashboard */}
       {engine && (
         <Card size="small" style={{ marginBottom: 16, background: engine.overloaded ? '#fff2f0' : '#f6ffed' }}
           title={<><DashboardOutlined /> 执行引擎状态 {engine.overloaded && <Tag color="red">资源过载</Tag>}</>}
@@ -104,15 +103,14 @@ export default function ExecutionPage() {
             <Col span={3}><Statistic title="队列等待" value={engine.queueSize} suffix={`/ ${engine.queueCapacity}`} /></Col>
             <Col span={3}><Statistic title="执行中" value={runningCount} valueStyle={{ color: runningCount > 0 ? '#1890ff' : undefined }} /></Col>
             <Col span={3}><Statistic title="排队中" value={queuedCount} /></Col>
-            <Col span={3}><Statistic title="CPU%" value={engine.cpuUsage} suffix="%" valueStyle={{ color: engine.cpuUsage > 80 ? '#ff4d4f' : undefined }} /></Col>
-            <Col span={3}><Statistic title="内存" value={engine.memoryUsedMb} suffix={`/ ${engine.memoryMaxMb} MB`} /></Col>
-            <Col span={3}><Statistic title="内存%" value={engine.memoryUsagePct} suffix="%" valueStyle={{ color: engine.memoryUsagePct > 80 ? '#ff4d4f' : undefined }} /></Col>
+            <Col span={3}><Statistic title="CPU%" value={engine.cpuUsage} suffix="%" valueStyle={{ color: (engine.cpuUsage || 0) > 80 ? '#ff4d4f' : undefined }} /></Col>
+            <Col span={3}><Statistic title="内存" value={engine.heapUsedMb || 0} suffix={`/ ${engine.heapMaxMb || 0} MB`} /></Col>
+            <Col span={3}><Statistic title="内存%" value={engine.heapUsagePct || 0} suffix="%" valueStyle={{ color: (engine.heapUsagePct || 0) > 80 ? '#ff4d4f' : undefined }} /></Col>
             <Col span={3}><Statistic title="已完成总数" value={engine.completedTasks} /></Col>
           </Row>
         </Card>
       )}
 
-      {/* Submit Task */}
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space size="large" align="center">
           <Select placeholder="选择规则组" showSearch optionFilterProp="label" style={{ width: 320 }}
@@ -124,7 +122,6 @@ export default function ExecutionPage() {
         </Space>
       </Card>
 
-      {/* Task List */}
       <Card title={<><PlayCircleOutlined /> 执行任务列表</>} size="small"
         extra={<Space>
           <Tag>执行中: {runningCount}</Tag><Tag>排队: {queuedCount}</Tag>
@@ -133,7 +130,6 @@ export default function ExecutionPage() {
         <Table columns={taskColumns} dataSource={tasks} rowKey="id" loading={loading} size="small" pagination={{ pageSize: 15 }} />
       </Card>
 
-      {/* Task Detail Modal */}
       <Modal title={`任务详情 #${currentTask?.id || ''}`} open={detailModal}
         onCancel={() => setDetailModal(false)} footer={null} width={1000} destroyOnClose>
         {currentTask && (
@@ -141,17 +137,17 @@ export default function ExecutionPage() {
             <Descriptions size="small" bordered column={3} style={{ marginBottom: 16 }}>
               <Descriptions.Item label="任务ID">{currentTask.id}</Descriptions.Item>
               <Descriptions.Item label="规则组">{currentTask.ruleGroupName}</Descriptions.Item>
-              <Descriptions.Item label="状态"><Badge status={statusColorMap[currentTask.status] as any} text={statusTextMap[currentTask.status]} /></Descriptions.Item>
+              <Descriptions.Item label="状态"><Badge status={statusColorMap[currentTask.status] as 'default'} text={statusTextMap[currentTask.status]} /></Descriptions.Item>
               <Descriptions.Item label="线程">{currentTask.threadName || '-'}</Descriptions.Item>
-              <Descriptions.Item label="CPU">{currentTask.cpuUsagePct}%</Descriptions.Item>
-              <Descriptions.Item label="内存">{currentTask.memoryUsageMb} MB</Descriptions.Item>
+              <Descriptions.Item label="CPU">{currentTask.cpuUsagePct || 0}%</Descriptions.Item>
+              <Descriptions.Item label="内存">{currentTask.memoryUsageMb || 0} MB</Descriptions.Item>
               <Descriptions.Item label="提交时间">{currentTask.queuedAt}</Descriptions.Item>
               <Descriptions.Item label="开始时间">{currentTask.startedAt || '-'}</Descriptions.Item>
               <Descriptions.Item label="耗时">{currentTask.durationMs || 0} ms</Descriptions.Item>
             </Descriptions>
 
-            <Progress percent={currentTask.progress} status={currentTask.status === 'FAILED' ? 'exception' : currentTask.status === 'RUNNING' ? 'active' : undefined}
-              format={() => `${currentTask.completedRules}/${currentTask.totalRules} 步`} style={{ marginBottom: 16 }} />
+            <Progress percent={currentTask.progress || 0} status={currentTask.status === 'FAILED' ? 'exception' : currentTask.status === 'RUNNING' ? 'active' : undefined}
+              format={() => `${currentTask.completedRules || 0}/${currentTask.totalRules || 0} 步`} style={{ marginBottom: 16 }} />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <Typography.Title level={5} style={{ margin: 0 }}>执行步骤链路</Typography.Title>
@@ -169,7 +165,7 @@ export default function ExecutionPage() {
                 description: (
                   <Space size="large">
                     <span>总行数: {s.totalRows || '-'}</span>
-                    <span>违规: <span style={{ color: (s.violatedRows || 0) > 0 ? '#ff4d4f' : '#52c41a' }}>{s.violatedRows || '-'}</span></span>
+                    <span>违规: <span style={{ color: (s.violatedRows || 0) > 0 ? '#ff4d4f' : '#52c41a' }}>{s.violatedRows ?? '-'}</span></span>
                     <span>耗时: {s.durationMs || '-'}ms</span>
                     {s.memoryDeltaMb ? <span>内存: {s.memoryDeltaMb}MB</span> : null}
                     {s.errorMessage && <Typography.Text type="danger">{s.errorMessage}</Typography.Text>}
