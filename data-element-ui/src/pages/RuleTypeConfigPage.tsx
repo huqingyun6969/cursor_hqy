@@ -50,7 +50,9 @@ export default function RuleTypeConfigPage() {
     { title: '描述', dataIndex: 'description', ellipsis: true },
     { title: '需要参数', dataIndex: 'needsParams', width: 90,
       render: (v: number) => v ? <Tag color="orange">是</Tag> : <Tag>否</Tag> },
-    { title: '参数模板', dataIndex: 'paramTemplate', width: 200, ellipsis: true },
+    { title: '参数模板', dataIndex: 'paramTemplate', width: 160, ellipsis: true },
+    { title: '关联字典', dataIndex: 'dictCode', width: 110,
+      render: (v: string) => v ? <Tag color="purple">{v}</Tag> : '-' },
     { title: '状态', dataIndex: 'status', width: 70,
       render: (v: number) => v === 1 ? <Tag color="green">启用</Tag> : <Tag color="red">禁用</Tag> },
     { title: '操作', width: 140, render: (_: unknown, record: RuleTypeConfig) => (
@@ -96,6 +98,9 @@ export default function RuleTypeConfigPage() {
           </Form.Item>
           <Form.Item name="paramTemplate" label="参数模板/提示">
             <Input placeholder='如 {"min":1,"max":100}' />
+          </Form.Item>
+          <Form.Item name="dictCode" label="关联字典编码" extra="值域校验(DOMAIN_CHECK)等类型可关联字典表">
+            <Input placeholder="如 TABLE_19" />
           </Form.Item>
           <Form.Item name="sortOrder" label="排序号" initialValue={0}>
             <InputNumber min={0} style={{ width: '100%' }} />

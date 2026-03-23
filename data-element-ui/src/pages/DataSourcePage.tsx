@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Table, Button, Modal, Form, Input, Select, Space, Popconfirm, message, Typography, Tag } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { listDataSources, saveDataSource, deleteDataSource } from '../api'
+import { PlusOutlined, EditOutlined, DeleteOutlined, ApiOutlined } from '@ant-design/icons'
+import { listDataSources, saveDataSource, deleteDataSource, testDataSource } from '../api'
 import type { DataSourceConfig, DbType } from '../types'
 
 const dbTypeOptions: { value: DbType; label: string; color: string }[] = [
@@ -23,6 +23,19 @@ export default function DataSourcePage() {
   const [form] = Form.useForm()
   const [editingId, setEditingId] = useState<number | undefined>()
   const [selectedDbType, setSelectedDbType] = useState<DbType>('MYSQL')
+  const [testing, setTesting] = useState(false)
+
+  const handleTestConnection = async () => {
+    try {
+      const values = await form.validateFields(['dbUrl', 'dbUsername', 'dbPassword'])
+      setTesting(true)
+      const res = await testDataSource(values)
+      if (res.code === 200) { message.success(res.data || '连接成功') }
+      else { message.error(res.message || '连接失败') }
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || '连接测试失败')
+    } finally { setTesting(false) }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -105,8 +118,13 @@ export default function DataSourcePage() {
       <Table columns={columns} dataSource={data} rowKey="id" loading={loading} size="middle" />
 
       <Modal title={editingId ? '编辑数据源' : '新增数据源'} open={modalOpen}
-        onOk={handleSave} onCancel={() => { setModalOpen(false); form.resetFields() }}
-        width={680} destroyOnClose>
+        onCancel={() => { setModalOpen(false); form.resetFields() }}
+        width={680} destroyOnClose
+        footer={[
+          <Button key="test" icon={<ApiOutlined />} loading={testing} onClick={handleTestConnection}>测试连接</Button>,
+          <Button key="cancel" onClick={() => { setModalOpen(false); form.resetFields() }}>取消</Button>,
+          <Button key="ok" type="primary" onClick={handleSave}>保存</Button>,
+        ]}>
         <Form form={form} layout="vertical">
           <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入名称' }]}>
             <Input placeholder="数据源名称" />
