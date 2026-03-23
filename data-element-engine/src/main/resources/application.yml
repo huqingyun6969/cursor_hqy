@@ -5,9 +5,9 @@ spring:
   application:
     name: data-element-engine
   datasource:
-    url: jdbc:mysql://localhost:3306/rule_engine?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-    username: rule_engine
-    password: rule_engine123
+    url: jdbc:mysql://localhost:33306/data_element_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
