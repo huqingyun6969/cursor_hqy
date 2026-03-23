@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Table, Button, Modal, Form, Input, Select, InputNumber, Space, Popconfirm, message, Typography, Tag, Tooltip } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, CodeOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { listRuleTypeConfigs, saveRuleTypeConfig, deleteRuleTypeConfig } from '../api'
 import type { RuleTypeConfig } from '../types'
 
@@ -16,6 +16,8 @@ export default function RuleTypeConfigPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [form] = Form.useForm()
   const [editingId, setEditingId] = useState<number | undefined>()
+  const [descModal, setDescModal] = useState(false)
+  const [descContent, setDescContent] = useState<{ title: string; desc: string }>({ title: '', desc: '' })
 
   const fetchData = async () => {
     setLoading(true)
@@ -47,6 +49,11 @@ export default function RuleTypeConfigPage() {
     fetchData()
   }
 
+  const showDescription = (record: RuleTypeConfig) => {
+    setDescContent({ title: `${record.typeName} (${record.typeCode})`, desc: record.description || '暂无描述' })
+    setDescModal(true)
+  }
+
   const columns = [
     { title: '排序', dataIndex: 'sortOrder', width: 50 },
     { title: '类型编码', dataIndex: 'typeCode', width: 220,
@@ -59,14 +66,22 @@ export default function RuleTypeConfigPage() {
         </span>
       )},
     { title: '类型名称', dataIndex: 'typeName', width: 130 },
-    { title: '规则级别', dataIndex: 'ruleLevel', width: 80,
+    { title: '规则级别', dataIndex: 'ruleLevel', width: 75,
       render: (v: string) => v === 'TABLE' ? <Tag color="purple">表级</Tag> : <Tag color="cyan">字段级</Tag> },
-    { title: '描述', dataIndex: 'description', ellipsis: true },
-    { title: '参数', dataIndex: 'needsParams', width: 60,
+    { title: '描述（双击查看完整说明）', dataIndex: 'description', ellipsis: true,
+      onCell: (record: RuleTypeConfig) => ({
+        onDoubleClick: () => showDescription(record),
+        style: { cursor: 'pointer' },
+      }),
+      render: (v: string) => {
+        const first = (v || '').split('\n')[0]
+        return <Typography.Text style={{ fontSize: 12 }}>{first}</Typography.Text>
+      }},
+    { title: '参数', dataIndex: 'needsParams', width: 55,
       render: (v: number) => v ? <Tag color="orange">需要</Tag> : <Tag>无</Tag> },
-    { title: '默认参数', dataIndex: 'defaultParams', width: 140, ellipsis: true,
+    { title: '默认参数', dataIndex: 'defaultParams', width: 130, ellipsis: true,
       render: (v: string) => v ? <Typography.Text code style={{ fontSize: 11 }}>{v}</Typography.Text> : '-' },
-    { title: '状态', dataIndex: 'status', width: 60,
+    { title: '状态', dataIndex: 'status', width: 55,
       render: (v: number) => v === 1 ? <Tag color="green">启用</Tag> : <Tag color="red">禁用</Tag> },
     { title: '操作', width: 130, render: (_: unknown, record: RuleTypeConfig) => (
       <Space>
@@ -85,22 +100,30 @@ export default function RuleTypeConfigPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Space>
           <Typography.Title level={5} style={{ margin: 0 }}>规则类型管理</Typography.Title>
-          <Tooltip title="内置规则类型由系统自动初始化，不可删除。可以新增自定义规则类型（包括动态脚本类型）。">
+          <Tooltip title="双击描述列查看完整说明。内置规则类型由系统初始化，不可删除。">
             <InfoCircleOutlined style={{ color: '#999' }} />
           </Tooltip>
           <Tag>{data.length} 种规则类型</Tag>
         </Space>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => {
-          form.resetFields()
-          setEditingId(undefined)
-          setModalOpen(true)
+          form.resetFields(); setEditingId(undefined); setModalOpen(true)
         }}>
           新增规则类型
         </Button>
       </div>
       <Table columns={columns} dataSource={data} rowKey="id" loading={loading} size="small"
-        pagination={false} scroll={{ y: 600 }} />
+        pagination={false} scroll={{ x: 1100, y: 600 }} />
 
+      {/* Description detail modal */}
+      <Modal title={descContent.title} open={descModal} onCancel={() => setDescModal(false)}
+        footer={<Button onClick={() => setDescModal(false)}>关闭</Button>} width={700}>
+        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 14, lineHeight: 1.8,
+          background: '#f5f5f5', padding: 16, borderRadius: 8, maxHeight: 500, overflow: 'auto' }}>
+          {descContent.desc}
+        </pre>
+      </Modal>
+
+      {/* Edit modal */}
       <Modal title={editingId ? '编辑规则类型' : '新增规则类型'} open={modalOpen}
         onOk={handleSave} onCancel={() => { setModalOpen(false); form.resetFields() }}
         width={640} destroyOnClose>
@@ -115,8 +138,8 @@ export default function RuleTypeConfigPage() {
           <Form.Item name="ruleLevel" label="规则级别" initialValue="FIELD" rules={[{ required: true }]}>
             <Select options={[{ value: 'TABLE', label: '表级规则' }, { value: 'FIELD', label: '字段级规则' }]} />
           </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea rows={2} placeholder="规则类型描述，如：通过JavaScript/Java动态脚本编写自定义校验逻辑" />
+          <Form.Item name="description" label="描述（支持多行，包含用途、适用场景、参数说明、示例）">
+            <Input.TextArea rows={6} placeholder="【用途】...\n【适用场景】...\n【参数说明】...\n【示例】..." />
           </Form.Item>
           <Form.Item name="needsParams" label="是否需要参数" initialValue={0}>
             <Select options={[{ value: 0, label: '否 — 无需额外参数' }, { value: 1, label: '是 — 规则定义时需填写参数' }]} />

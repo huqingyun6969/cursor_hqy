@@ -1,45 +1,58 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Table, Button, Modal, Form, Input, Select, InputNumber, Space, Popconfirm, message, Typography, Card, Tag, Alert } from 'antd'
+import { Table, Button, Modal, Form, Input, Select, InputNumber, Space, Popconfirm, message, Typography, Card, Tag, Alert, Divider } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowLeftOutlined, CodeOutlined } from '@ant-design/icons'
 import { listRules, saveRule, deleteRule, listRuleTypeConfigs, getRuleGroup } from '../api'
 import type { RuleDefinition, RuleTypeConfig, RuleGroup } from '../types'
 
-const SCRIPT_JS_EXAMPLE = `// JavaScript 动态脚本示例 (ES6, GraalJS引擎)
-// ctx 是 RuleContext 对象，可获取数据行和当前规则
-var ctx = this.getContextBean(Java.type('com.iwhalecloud.dep.runengine.liteflow.context.RuleContext').class);
+const SCRIPT_JS_EXAMPLE = `// ===== JavaScript 动态脚本 (GraalJS引擎, 支持ES6) =====
+// 后台通过 LiteFlow 动态加载此脚本执行
+// 通过 RuleContext 获取数据行，遍历判断，设置违规数
+
+var RuleContext = Java.type("com.iwhalecloud.dep.runengine.liteflow.context.RuleContext");
+var ctx = this.getContextBean(RuleContext.class);
 var fieldName = ctx.getCurrentRule().getFieldName();
 var rows = ctx.getDataRows();
+
 var violated = 0;
 for (var i = 0; i < rows.size(); i++) {
     var value = rows.get(i).get(fieldName);
-    if (value == null || value.toString().trim() === '') {
+    // 示例逻辑：检查字段值不为空且长度>=2
+    if (value == null || value.toString().trim().length() < 2) {
         violated++;
-        ctx.addViolation("字段 " + fieldName + " 值为空");
+        ctx.addViolation("字段[" + fieldName + "]值不合规: " + value);
     }
 }
 ctx.setViolatedRows(violated);`
 
-const SCRIPT_JAVA_EXAMPLE = `// Java 动态脚本示例 (javax-pro引擎)
+const SCRIPT_JAVA_EXAMPLE = `// ===== Java 动态脚本 (javax-pro引擎, 推荐) =====
+// 后台通过 LiteFlow 动态加载此脚本执行
+// 继承 NodeComponent，在 process() 中编写校验逻辑
+
 import com.iwhalecloud.dep.runengine.liteflow.context.RuleContext;
 import com.yomahub.liteflow.core.NodeComponent;
 import java.util.List;
 import java.util.Map;
 
-public class DynamicRule extends NodeComponent {
+public class Demo extends NodeComponent {
     @Override
     public void process() throws Exception {
+        // 获取规则上下文
         RuleContext ctx = this.getContextBean(RuleContext.class);
         String fieldName = ctx.getCurrentRule().getFieldName();
         List<Map<String, Object>> rows = ctx.getDataRows();
+
         long violated = 0;
         for (Map<String, Object> row : rows) {
             Object value = row.get(fieldName);
-            if (value == null || value.toString().trim().isEmpty()) {
+            // 示例逻辑：检查字段值不为空且长度>=2
+            if (value == null || value.toString().trim().isEmpty()
+                    || value.toString().trim().length() < 2) {
                 violated++;
-                ctx.addViolation("字段 " + fieldName + " 值为空");
+                ctx.addViolation("字段[" + fieldName + "]值不合规: " + value);
             }
         }
+        // 设置违规行数（必须调用）
         ctx.setViolatedRows(violated);
     }
 }`
@@ -223,8 +236,30 @@ export default function RuleDetailPage() {
               }>
                 <Input.TextArea placeholder='例如: {"min":3,"max":50}' rows={2} />
               </Form.Item>
-              <Form.Item name="customSql" label="自定义SQL（可选）">
-                <Input.TextArea placeholder="SELECT COUNT(*) FROM table WHERE ..." rows={3} />
+
+              {selectedType === 'CUSTOM_SQL' && (
+                <Alert type="info" showIcon style={{ marginBottom: 16 }}
+                  message="自定义SQL校验使用说明"
+                  description={
+                    <div style={{ fontSize: 12, lineHeight: 1.8 }}>
+                      在下方输入条件表达式，系统对每行数据逐行判断（TRUE=通过，FALSE=违规）：<br/>
+                      <code>IS NOT NULL</code> — 字段不为空则通过<br/>
+                      <code>LENGTH(field) &gt; 10</code> — 字段长度&gt;10则通过<br/>
+                      <code>LIKE &apos;%@%.com&apos;</code> — 匹配模式则通过<br/>
+                      <code>IN (&apos;男&apos;,&apos;女&apos;)</code> — 值在列表中则通过<br/>
+                      <code>COUNT: IS NULL</code> — 计数模式：空值的行算作违规
+                    </div>
+                  } />
+              )}
+
+              <Form.Item name="customSql" label="自定义SQL / 条件表达式"
+                extra={selectedType === 'CUSTOM_SQL' ? '必填：输入条件表达式，如 IS NOT NULL 或 LENGTH(field) > 5' : '可选：仅CUSTOM_SQL类型需要填写'}>
+                <Input.TextArea
+                  placeholder={selectedType === 'CUSTOM_SQL'
+                    ? '示例1: IS NOT NULL\n示例2: LENGTH(field) > 10\n示例3: IN (\'男\',\'女\',\'未知\')\n示例4: LIKE \'%@%\''
+                    : 'SELECT COUNT(*) FROM table WHERE ...'}
+                  rows={selectedType === 'CUSTOM_SQL' ? 4 : 3}
+                  style={selectedType === 'CUSTOM_SQL' ? { fontFamily: 'monospace' } : undefined} />
               </Form.Item>
             </>
           )}
