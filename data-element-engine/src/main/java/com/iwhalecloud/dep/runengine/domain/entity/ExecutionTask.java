@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public class ExecutionTask {
     @TableId(type = IdType.AUTO)
     private Long id;
+    private Long metadataId;
     private Long ruleGroupId;
     private String ruleGroupName;
     private String status;

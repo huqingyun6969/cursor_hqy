@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { R, DataSourceConfig, RuleGroup, RuleDefinition, DictTable, DictItem, ExecutionRecord, ExecutionDetail, ExecutionResultVO, QualityReportVO, QualityReport, WorkOrderVO, WorkOrder, RuleTypeConfig, RuleChainConfig, ExecutionTask, ExecutionSubTask, ExecutionStepLog, EngineStatus, TaskCreateDTO } from '../types'
+import type { R, DataSourceConfig, RuleGroup, RuleDefinition, DictTable, DictItem, ExecutionRecord, ExecutionDetail, ExecutionResultVO, QualityReportVO, QualityReport, WorkOrderVO, WorkOrder, RuleTypeConfig, RuleChainConfig, ExecutionTask, ExecutionSubTask, ExecutionStepLog, EngineStatus, TaskCreateDTO, MetadataConfig, MetadataStandard } from '../types'
 
 const http = axios.create({ baseURL: '/api', timeout: 60000 })
 http.interceptors.response.use((res) => res, (err) => { console.error('API Error:', err); return Promise.reject(err) })
@@ -72,6 +72,15 @@ export const createWorkOrder = (data: Record<string, unknown>) => http.post<R<Wo
 export const getWorkOrder = (orderId: number) => http.get<R<WorkOrderVO>>(`/work-order/${orderId}`).then(r => r.data)
 export const listWorkOrders = () => http.get<R<WorkOrder[]>>('/work-order/list').then(r => r.data)
 export const workOrderAction = (orderId: number, data: Record<string, unknown>) => http.post<R<void>>(`/work-order/${orderId}/action`, data).then(r => r.data)
+
+// Metadata
+export const listMetadata = () => http.get<R<MetadataConfig[]>>('/metadata/list').then(r => r.data)
+export const getMetadata = (id: number) => http.get<R<MetadataConfig>>(`/metadata/${id}`).then(r => r.data)
+export const saveMetadata = (data: MetadataConfig) => http.post<R<void>>('/metadata/save', data).then(r => r.data)
+export const deleteMetadata = (id: number) => http.delete<R<void>>(`/metadata/${id}`).then(r => r.data)
+export const listMetadataStandards = (metadataId: number) => http.get<R<MetadataStandard[]>>(`/metadata/${metadataId}/standards`).then(r => r.data)
+export const saveMetadataStandard = (data: MetadataStandard) => http.post<R<void>>('/metadata/standard/save', data).then(r => r.data)
+export const deleteMetadataStandard = (id: number) => http.delete<R<void>>(`/metadata/standard/${id}`).then(r => r.data)
 
 // Dashboard
 export const getDashboardStats = () => http.get<R<Record<string, unknown>>>('/dashboard/stats').then(r => r.data)

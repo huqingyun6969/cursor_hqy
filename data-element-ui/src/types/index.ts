@@ -21,12 +21,27 @@ export interface RuleGroup {
   id?: number
   name: string
   description?: string
-  dataSourceId: number
-  tableName?: string
-  tableLabel?: string
-  querySql?: string
-  specifiedFields?: string
   status: number
+}
+
+export interface MetadataConfig {
+  id?: number
+  name: string
+  description?: string
+  dataSourceId: number
+  tableName: string
+  tableLabel?: string
+  specifiedFields?: string
+  querySql?: string
+  status: number
+}
+
+export interface MetadataStandard {
+  id?: number
+  metadataId: number
+  ruleGroupId: number
+  fieldName?: string
+  description?: string
 }
 
 export interface RuleDefinition {
@@ -187,6 +202,7 @@ export interface EngineStatus {
 }
 
 export interface TaskCreateDTO {
+  metadataId?: number
   ruleGroupId: number
   dataSourceId?: number
   tableName?: string

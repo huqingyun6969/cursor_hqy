@@ -1,11 +1,11 @@
 package com.iwhalecloud.dep.runengine.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.iwhalecloud.dep.runengine.domain.entity.*;
 import com.iwhalecloud.dep.runengine.domain.enums.RuleType;
 import com.iwhalecloud.dep.runengine.domain.vo.ExecutionResultVO;
 import com.iwhalecloud.dep.runengine.liteflow.context.RuleContext;
-import com.iwhalecloud.dep.runengine.mapper.ExecutionDetailMapper;
-import com.iwhalecloud.dep.runengine.mapper.ExecutionRecordMapper;
+import com.iwhalecloud.dep.runengine.mapper.*;
 import com.iwhalecloud.dep.runengine.service.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,6 +36,8 @@ public class RuleExecutionServiceImpl implements RuleExecutionService {
     private final FlowExecutor flowExecutor;
     private final ExecutionRecordMapper executionRecordMapper;
     private final ExecutionDetailMapper executionDetailMapper;
+    private final MetadataMapper metadataMapper;
+    private final MetadataStandardMapper metadataStandardMapper;
 
     public RuleExecutionServiceImpl(RuleGroupService ruleGroupService,
                                      RuleDefinitionService ruleDefinitionService,
@@ -43,7 +45,9 @@ public class RuleExecutionServiceImpl implements RuleExecutionService {
                                      DictService dictService,
                                      FlowExecutor flowExecutor,
                                      ExecutionRecordMapper executionRecordMapper,
-                                     ExecutionDetailMapper executionDetailMapper) {
+                                     ExecutionDetailMapper executionDetailMapper,
+                                     MetadataMapper metadataMapper,
+                                     MetadataStandardMapper metadataStandardMapper) {
         this.ruleGroupService = ruleGroupService;
         this.ruleDefinitionService = ruleDefinitionService;
         this.dataSourceConfigService = dataSourceConfigService;
@@ -51,6 +55,8 @@ public class RuleExecutionServiceImpl implements RuleExecutionService {
         this.flowExecutor = flowExecutor;
         this.executionRecordMapper = executionRecordMapper;
         this.executionDetailMapper = executionDetailMapper;
+        this.metadataMapper = metadataMapper;
+        this.metadataStandardMapper = metadataStandardMapper;
     }
 
     @Override
@@ -60,10 +66,12 @@ public class RuleExecutionServiceImpl implements RuleExecutionService {
             throw new RuntimeException("Rule group not found: " + ruleGroupId);
         }
 
-        DataSourceConfig ds = dataSourceConfigService.getById(group.getDataSourceId());
-        if (ds == null) {
-            throw new RuntimeException("Data source not found: " + group.getDataSourceId());
-        }
+        MetadataStandard ms = metadataStandardMapper.selectOne(
+                new LambdaQueryWrapper<MetadataStandard>().eq(MetadataStandard::getRuleGroupId, ruleGroupId).last("LIMIT 1"));
+        Metadata metadata = ms != null ? metadataMapper.selectById(ms.getMetadataId()) : null;
+        if (metadata == null) throw new RuntimeException("未找到关联的元数据，请先在元数据管理中关联此数据标准");
+        DataSourceConfig ds = dataSourceConfigService.getById(metadata.getDataSourceId());
+        if (ds == null) throw new RuntimeException("Data source not found: " + metadata.getDataSourceId());
 
         List<RuleDefinition> rules = ruleDefinitionService.getByGroupId(ruleGroupId);
         if (rules.isEmpty()) {
@@ -81,7 +89,7 @@ public class RuleExecutionServiceImpl implements RuleExecutionService {
         long startTime = System.currentTimeMillis();
 
         try {
-            List<Map<String, Object>> dataRows = fetchData(ds, group);
+            List<Map<String, Object>> dataRows = fetchData(ds, metadata);
             long totalRows = dataRows.size();
             record.setTotalRows(totalRows);
 
@@ -190,7 +198,7 @@ public class RuleExecutionServiceImpl implements RuleExecutionService {
         }
     }
 
-    private List<Map<String, Object>> fetchData(DataSourceConfig ds, RuleGroup group) {
+    private List<Map<String, Object>> fetchData(DataSourceConfig ds, Metadata group) {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setUrl(ds.getDbUrl());
         dataSource.setUsername(ds.getDbUsername());

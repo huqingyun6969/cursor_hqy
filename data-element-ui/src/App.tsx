@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons'
 import DashboardPage from './pages/DashboardPage'
 import DataSourcePage from './pages/DataSourcePage'
+import MetadataPage from './pages/MetadataPage'
 import RuleGroupPage from './pages/RuleGroupPage'
 import RuleDetailPage from './pages/RuleDetailPage'
 import ExecutionPage from './pages/ExecutionPage'
@@ -29,8 +30,9 @@ const { Header, Content, Sider } = Layout
 const menuItems = [
   { key: '/', icon: <HomeOutlined />, label: '首页概览' },
   { key: '/datasource', icon: <DatabaseOutlined />, label: '数据源管理' },
+  { key: '/metadata', icon: <DatabaseOutlined />, label: '元数据管理' },
   { key: '/rule-type', icon: <SettingOutlined />, label: '规则类型管理' },
-  { key: '/rule-group', icon: <AuditOutlined />, label: '规则组管理' },
+  { key: '/rule-group', icon: <AuditOutlined />, label: '数据标准管理' },
   { key: '/task', icon: <CloudServerOutlined />, label: '主任务管理' },
   { key: '/execution', icon: <ThunderboltOutlined />, label: '规则执行' },
   { key: '/report', icon: <FileTextOutlined />, label: '质量报告' },
@@ -71,6 +73,7 @@ function App() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/datasource" element={<DataSourcePage />} />
+            <Route path="/metadata" element={<MetadataPage />} />
             <Route path="/rule-type" element={<RuleTypeConfigPage />} />
             <Route path="/rule-orchestration" element={<RuleOrchestrationPage />} />
             <Route path="/rule-group" element={<RuleGroupPage />} />

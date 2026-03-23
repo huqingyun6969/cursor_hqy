@@ -16,21 +16,43 @@ CREATE TABLE IF NOT EXISTS `dep_data_source_config` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据源配置表';
 
-CREATE TABLE IF NOT EXISTS `dep_rule_group` (
+CREATE TABLE IF NOT EXISTS `dep_metadata` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `name` VARCHAR(200) NOT NULL COMMENT '规则组名称',
-    `description` VARCHAR(500) DEFAULT NULL COMMENT '规则组描述',
+    `name` VARCHAR(200) NOT NULL COMMENT '元数据名称',
+    `description` VARCHAR(500) DEFAULT NULL COMMENT '描述',
     `data_source_id` BIGINT NOT NULL COMMENT '关联数据源ID',
-    `table_name` VARCHAR(200) DEFAULT NULL COMMENT '校验目标表名',
+    `table_name` VARCHAR(200) NOT NULL COMMENT '校验目标表名',
     `table_label` VARCHAR(200) DEFAULT NULL COMMENT '表中文名称',
-    `query_sql` TEXT DEFAULT NULL COMMENT '自定义查询SQL(可选,优先于表名)',
     `specified_fields` TEXT DEFAULT NULL COMMENT '查询字段(逗号分隔,默认*)',
+    `query_sql` TEXT DEFAULT NULL COMMENT '自定义查询SQL(可选,优先于表名)',
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 1=启用 0=禁用',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     KEY `idx_data_source_id` (`data_source_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='规则组表-一个规则组对应一张业务表的校验规则集';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='元数据管理表-管理数据源中的业务表及其校验配置';
+
+CREATE TABLE IF NOT EXISTS `dep_metadata_standard` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `metadata_id` BIGINT NOT NULL COMMENT '元数据ID',
+    `rule_group_id` BIGINT NOT NULL COMMENT '数据标准(规则组)ID',
+    `field_name` VARCHAR(200) DEFAULT NULL COMMENT '关联字段名(可选)',
+    `description` VARCHAR(500) DEFAULT NULL COMMENT '关联说明',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_metadata_id` (`metadata_id`),
+    KEY `idx_rule_group_id` (`rule_group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='元数据-数据标准关联表-一个元数据表可关联多个数据标准';
+
+CREATE TABLE IF NOT EXISTS `dep_rule_group` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `name` VARCHAR(200) NOT NULL COMMENT '数据标准名称',
+    `description` VARCHAR(500) DEFAULT NULL COMMENT '数据标准描述',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 1=启用 0=禁用',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据标准表(原规则组)-定义数据质量校验规则集';
 
 CREATE TABLE IF NOT EXISTS `dep_rule_definition` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',

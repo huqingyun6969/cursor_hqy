@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.iwhalecloud.dep.runengine.domain.entity.*;
 import com.iwhalecloud.dep.runengine.domain.vo.R;
 import com.iwhalecloud.dep.runengine.mapper.*;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -21,11 +22,13 @@ public class DashboardController {
     private final ExecutionViolationMapper violationMapper;
     private final WorkOrderMapper orderMapper;
     private final QualityReportMapper reportMapper;
+    private final MetadataMapper metadataMapper;
 
     public DashboardController(DataSourceConfigMapper dsMapper, RuleGroupMapper groupMapper,
                                 RuleDefinitionMapper ruleMapper, RuleTypeConfigMapper typeMapper,
                                 ExecutionTaskMapper taskMapper, ExecutionViolationMapper violationMapper,
-                                WorkOrderMapper orderMapper, QualityReportMapper reportMapper) {
+                                WorkOrderMapper orderMapper, QualityReportMapper reportMapper,
+                                MetadataMapper metadataMapper) {
         this.dsMapper = dsMapper;
         this.groupMapper = groupMapper;
         this.ruleMapper = ruleMapper;
@@ -34,6 +37,7 @@ public class DashboardController {
         this.violationMapper = violationMapper;
         this.orderMapper = orderMapper;
         this.reportMapper = reportMapper;
+        this.metadataMapper = metadataMapper;
     }
 
     @GetMapping("/stats")
@@ -57,9 +61,12 @@ public class DashboardController {
         long ruleGroupCount = groupMapper.selectCount(null);
         s.put("ruleGroupCount", ruleGroupCount);
 
-        List<RuleGroup> groups = groupMapper.selectList(null);
-        long distinctTables = groups.stream()
-                .map(RuleGroup::getTableName)
+        long metadataCount = metadataMapper.selectCount(null);
+        s.put("metadataCount", metadataCount);
+
+        List<Metadata> metadataList = metadataMapper.selectList(null);
+        long distinctTables = metadataList.stream()
+                .map(Metadata::getTableName)
                 .filter(t -> t != null && !t.isEmpty())
                 .distinct().count();
         s.put("targetTableCount", distinctTables);

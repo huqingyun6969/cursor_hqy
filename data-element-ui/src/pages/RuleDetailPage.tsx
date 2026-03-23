@@ -145,7 +145,7 @@ export default function RuleDetailPage() {
       <Space style={{ marginBottom: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/rule-group')}>返回</Button>
         <Typography.Title level={5} style={{ margin: 0 }}>
-          规则组: {group?.name || groupId} {group?.tableName && <Tag>{group.tableName}</Tag>}
+          数据标准: {group?.name || groupId} {group?.tableName && <Tag>{group.tableName}</Tag>}
         </Typography.Title>
       </Space>
       <Card size="small" style={{ marginBottom: 16 }}>
@@ -153,13 +153,13 @@ export default function RuleDetailPage() {
           <span>共 <strong>{rules.length}</strong> 条规则</span>
           <Button type="primary" icon={<PlusOutlined />}
             onClick={() => { form.resetFields(); setEditingId(undefined); setSelectedType(''); setSelectedLevel('FIELD'); setModalOpen(true) }}>
-            新增规则
+            关联规则
           </Button>
         </div>
       </Card>
       <Table columns={columns} dataSource={rules} rowKey="id" loading={loading} size="small" pagination={{ pageSize: 20 }} />
 
-      <Modal title={editingId ? '编辑规则' : '新增规则'} open={modalOpen}
+      <Modal title={editingId ? '编辑规则' : '关联规则'} open={modalOpen}
         onOk={handleSave} onCancel={() => { setModalOpen(false); form.resetFields() }}
         width={800} destroyOnClose>
         <Form form={form} layout="vertical">

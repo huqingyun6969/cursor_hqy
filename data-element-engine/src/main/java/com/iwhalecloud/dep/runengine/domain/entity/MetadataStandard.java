@@ -5,17 +5,15 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("dep_rule_group")
-public class RuleGroup {
-
+@TableName("dep_metadata_standard")
+public class MetadataStandard {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String name;
+    private Long metadataId;
+    private Long ruleGroupId;
+    private String fieldName;
     private String description;
-    private Integer status;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updatedAt;
 }

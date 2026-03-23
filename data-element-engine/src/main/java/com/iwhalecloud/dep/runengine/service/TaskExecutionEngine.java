@@ -70,6 +70,7 @@ public class TaskExecutionEngine {
     private final WorkOrderMapper workOrderMapper;
     private final WorkOrderIssueMapper workOrderIssueMapper;
     private final WorkOrderLogMapper workOrderLogMapper;
+    private final MetadataMapper metadataMapper;
     private final RuleGroupService ruleGroupService;
     private final RuleDefinitionService ruleDefinitionService;
     private final DataSourceConfigService dataSourceConfigService;
@@ -93,6 +94,7 @@ public class TaskExecutionEngine {
                                 WorkOrderMapper workOrderMapper,
                                 WorkOrderIssueMapper workOrderIssueMapper,
                                 WorkOrderLogMapper workOrderLogMapper,
+                                MetadataMapper metadataMapper,
                                 RuleGroupService ruleGroupService,
                                 RuleDefinitionService ruleDefinitionService,
                                 DataSourceConfigService dataSourceConfigService,
@@ -110,6 +112,7 @@ public class TaskExecutionEngine {
         this.workOrderMapper = workOrderMapper;
         this.workOrderIssueMapper = workOrderIssueMapper;
         this.workOrderLogMapper = workOrderLogMapper;
+        this.metadataMapper = metadataMapper;
         this.ruleGroupService = ruleGroupService;
         this.ruleDefinitionService = ruleDefinitionService;
         this.dataSourceConfigService = dataSourceConfigService;
@@ -140,14 +143,17 @@ public class TaskExecutionEngine {
 
     public ExecutionTask submitTask(TaskCreateDTO dto) {
         RuleGroup group = ruleGroupService.getById(dto.getRuleGroupId());
-        if (group == null) throw new RuntimeException("Rule group not found: " + dto.getRuleGroupId());
-
-        Long dsId = dto.getDataSourceId() != null ? dto.getDataSourceId() : group.getDataSourceId();
-        DataSourceConfig ds = dataSourceConfigService.getById(dsId);
-        if (ds == null) throw new RuntimeException("Data source not found: " + dsId);
+        if (group == null) throw new RuntimeException("数据标准不存在: " + dto.getRuleGroupId());
 
         List<RuleDefinition> rules = ruleDefinitionService.getByGroupId(dto.getRuleGroupId());
         if (rules.isEmpty()) throw new RuntimeException("No rules defined for group: " + dto.getRuleGroupId());
+
+        Metadata metadata = dto.getMetadataId() != null ? metadataMapper.selectById(dto.getMetadataId()) : null;
+        Long dsId = dto.getDataSourceId() != null ? dto.getDataSourceId()
+                : (metadata != null ? metadata.getDataSourceId() : null);
+        if (dsId == null) throw new RuntimeException("未指定数据源，请通过元数据或直接指定");
+        DataSourceConfig ds = dataSourceConfigService.getById(dsId);
+        if (ds == null) throw new RuntimeException("Data source not found: " + dsId);
 
         int batchSize = dto.getBatchSize() != null && dto.getBatchSize() > 0 ? dto.getBatchSize() : defaultBatchSize;
         int maxConcSub = dto.getMaxConcurrentSubTasks() != null && dto.getMaxConcurrentSubTasks() > 0
@@ -159,7 +165,10 @@ public class TaskExecutionEngine {
         task.setRuleGroupId(dto.getRuleGroupId());
         task.setRuleGroupName(group.getName());
         task.setDataSourceId(dsId);
-        task.setTableName(dto.getTableName() != null ? dto.getTableName() : group.getTableName());
+        String resolvedTable = dto.getTableName();
+        if (resolvedTable == null && metadata != null) resolvedTable = metadata.getTableName();
+        task.setTableName(resolvedTable);
+        task.setMetadataId(dto.getMetadataId());
         task.setStatus("QUEUED");
         task.setPriority(5);
         task.setTotalRules(rules.size());
@@ -170,8 +179,9 @@ public class TaskExecutionEngine {
         task.setMaxConcurrentSubTasks(maxConcSub);
         task.setMaxSubTaskTimeoutSec(subTimeout);
         String fields = dto.getSpecifiedFields();
-        if ((fields == null || fields.isEmpty()) && group.getSpecifiedFields() != null && !group.getSpecifiedFields().isEmpty()) {
-            fields = group.getSpecifiedFields();
+        if ((fields == null || fields.isEmpty()) && metadata != null
+                && metadata.getSpecifiedFields() != null && !metadata.getSpecifiedFields().isEmpty()) {
+            fields = metadata.getSpecifiedFields();
         }
         task.setSpecifiedFields(fields);
         task.setTimeFilterField(dto.getTimeFilterField());

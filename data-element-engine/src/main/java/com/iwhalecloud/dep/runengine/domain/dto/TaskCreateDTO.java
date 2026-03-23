@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class TaskCreateDTO {
+    private Long metadataId;
     private Long ruleGroupId;
     private Long dataSourceId;
     private String tableName;
