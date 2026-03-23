@@ -104,11 +104,11 @@ public class RuleExecutionServiceImpl implements RuleExecutionService {
 
                 String chainEl = "THEN(" + componentId + ");";
                 try {
-                    LiteflowResponse response = flowExecutor.execute2Resp(
-                            "dynamic_chain_" + rule.getId(),
+                    LiteflowResponse response = flowExecutor.execute2RespWithEL(
+                            chainEl,
                             null,
-                            ruleContext,
-                            chainEl
+                            null,
+                            ruleContext
                     );
                     if (!response.isSuccess()) {
                         log.error("Rule execution failed for rule {}: {}", rule.getId(), response.getCause());
