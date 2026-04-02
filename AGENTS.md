@@ -14,5 +14,6 @@ This repository contains `data-element-mgr`, a Spring Boot 3.4.3 + MyBatis-Plus 
 ### Caveats
 
 - MyBatis-Plus 3.5.9 moved `PaginationInnerInterceptor` to the `mybatis-plus-jsqlparser` artifact. The pom.xml needs that dependency for pagination to compile.
-- The app expects MySQL; without it, `spring-boot:run` will fail at startup with a datasource error.
+- The app expects MySQL; without it, `spring-boot:run` will fail at startup with a datasource error. MySQL runs in Docker container `mysql-dev` — start with `sudo docker start mysql-dev` if stopped.
 - No lint tool (Checkstyle/PMD) is currently configured; static analysis is limited to `mvn compile`.
+- `application.yml` sets `spring.sql.init.mode=always` with `continue-on-error=true`, so `db/dep.sql` (schema) and `db/dep_data.sql` (seed data) run on every app startup. Both are idempotent (`CREATE TABLE IF NOT EXISTS`, `INSERT IGNORE`).
