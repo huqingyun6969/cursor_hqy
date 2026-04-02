@@ -1,0 +1,59 @@
+server:
+  port: ${SERVER_PORT:18081}
+
+spring:
+  application:
+    name: data-element-mgr
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/data_element_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: dep-hikari-pool
+      maximum-pool-size: ${SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE:20}
+      minimum-idle: ${SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE:5}
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/dep.sql
+      data-locations: classpath:db/dep_data.sql
+      continue-on-error: true
+  cloud:
+    nacos:
+      discovery:
+        enabled: ${NACOS_ENABLED:false}
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:}
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/**/*.xml
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    com.dep: debug
+
+sso:
+  login-url: ${SSO_LOGIN_URL:http://172.16.81.220:9000/sso/login/loginWithPassword}
+  profile-url: ${SSO_PROFILE_URL:http://172.16.81.220:9000/sso/oauth2.0/profile}
+  client-id: ${SSO_CLIENT_ID:c2089e8f272821357633f923df0fca88}
+  service: ${SSO_SERVICE:http://127.0.0.1:18081/api}
+  aes-key: ${SSO_AES_KEY:iwhalecloud12345}
+  white-list:
+    - /api/auth/login
+    - /api/auth/logout
+    - /api/health
