@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Layout, Tree, Input, Tabs, Button, Card, Tag, Row, Col, Descriptions,
-  Table, Timeline, Modal, Form, Select, Space, Empty, Badge, message, Popconfirm,
+  Table, Timeline, Modal, Form, Select, Space, Empty, message, Popconfirm,
 } from 'antd'
 import {
   PlusOutlined, SearchOutlined, FileTextOutlined, FolderOutlined,
@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons'
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import {
-  getCatalogTree, getDocumentPage, getDocument, createDocument, updateDocument, deleteDocument,
+  getCatalogTree, getDocumentPage, getDocument, createDocument,
   getDocRules, createDocRule, updateDocRule, deleteDocRule, getApprovals,
 } from '../../../api/standard'
 

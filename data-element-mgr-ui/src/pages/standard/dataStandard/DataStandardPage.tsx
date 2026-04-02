@@ -115,7 +115,7 @@ const DataStandardPage: React.FC = () => {
         page: pagination.current, size: pagination.pageSize,
         status: statusFilter || undefined, stdName: searchName || undefined,
       })
-      const d = (res as Record<string, Record<string, unknown>>)?.data
+      const d = (res as unknown as Record<string, Record<string, unknown>>)?.data
       setDataList((d?.records as StdRecord[] | undefined) ?? mockStandards)
       setPagination((p) => ({ ...p, total: (d?.total as number | undefined) ?? 4 }))
     } catch (_e) {
@@ -293,15 +293,15 @@ const StandardForm: React.FC<FormProps> = ({ mode, editingId, sets, onCancel, on
   React.useEffect(() => {
     if (editingId && (mode === 'edit' || mode === 'detail')) {
       getStdInfo(editingId).then((res) => {
-        const d = res as Record<string, unknown> | undefined
+        const d = res as unknown as Record<string, unknown> | undefined
         form.setFieldsValue((d?.data as Record<string, unknown>) ?? {})
       }).catch(noop)
       getStdRules(editingId).then((res) => {
-        const d = res as Record<string, unknown> | undefined
+        const d = res as unknown as Record<string, unknown> | undefined
         setRules((d?.data as RuleRecord[]) ?? mockRules)
       }).catch(noop)
       getRefDocs(editingId).then((res) => {
-        const d = res as Record<string, unknown> | undefined
+        const d = res as unknown as Record<string, unknown> | undefined
         setRefDocs((d?.data as RefDocRecord[]) ?? mockRefDocs)
       }).catch(noop)
     }
