@@ -26,13 +26,4 @@ This repository contains `data-element-mgr`, a Spring Boot 3.4.3 + MyBatis-Plus 
 - **Build**: `pnpm build` (runs `tsc -b && vite build`)
 - **Lint**: `pnpm lint` (ESLint with typescript-eslint + react-hooks + react-refresh)
 - **API proxy**: Dev server proxies `/api` to `http://127.0.0.1:18081` (the Spring Boot backend)
-
-### Frontend (`data-element-mgr-ui`)
-
-React 19 + TypeScript + Vite 8 + Ant Design 5 app.
-
-- **Install**: `pnpm install --frozen-lockfile` (from `data-element-mgr-ui/`)
-- **Dev server**: `pnpm dev` — runs on port 3001, proxies `/api` to `http://127.0.0.1:18081`
-- **Lint**: `pnpm lint` (ESLint)
-- **Build**: `pnpm build` (runs `tsc -b && vite build`)
-- Page components are lazy-loaded in `MainLayout.tsx`. TypeScript will report "Cannot find module" errors until the individual page component files are created in their respective directories under `src/pages/`.
+- Page components are lazy-loaded in `MainLayout.tsx`. TypeScript will report "Cannot find module" errors until individual page component files are created under `src/pages/`.
