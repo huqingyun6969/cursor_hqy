@@ -17,3 +17,22 @@ This repository contains `data-element-mgr`, a Spring Boot 3.4.3 + MyBatis-Plus 
 - The app expects MySQL; without it, `spring-boot:run` will fail at startup with a datasource error. MySQL runs in Docker container `mysql-dev` — start with `sudo docker start mysql-dev` if stopped.
 - No lint tool (Checkstyle/PMD) is currently configured; static analysis is limited to `mvn compile`.
 - `application.yml` sets `spring.sql.init.mode=always` with `continue-on-error=true`, so `db/dep.sql` (schema) and `db/dep_data.sql` (seed data) run on every app startup. Both are idempotent (`CREATE TABLE IF NOT EXISTS`, `INSERT IGNORE`).
+
+### Frontend (`data-element-mgr-ui/`)
+
+- **Stack**: React 19, TypeScript 5.9, Ant Design 5, React Router v7, Vite 8
+- **Install**: `pnpm install` (from `data-element-mgr-ui/`)
+- **Dev**: `pnpm dev` — serves on port 3001 (falls back to next available port)
+- **Build**: `pnpm build` (runs `tsc -b && vite build`)
+- **Lint**: `pnpm lint` (ESLint with typescript-eslint + react-hooks + react-refresh)
+- **API proxy**: Dev server proxies `/api` to `http://127.0.0.1:18081` (the Spring Boot backend)
+
+### Frontend (`data-element-mgr-ui`)
+
+React 19 + TypeScript + Vite 8 + Ant Design 5 app.
+
+- **Install**: `pnpm install --frozen-lockfile` (from `data-element-mgr-ui/`)
+- **Dev server**: `pnpm dev` — runs on port 3001, proxies `/api` to `http://127.0.0.1:18081`
+- **Lint**: `pnpm lint` (ESLint)
+- **Build**: `pnpm build` (runs `tsc -b && vite build`)
+- Page components are lazy-loaded in `MainLayout.tsx`. TypeScript will report "Cannot find module" errors until the individual page component files are created in their respective directories under `src/pages/`.
