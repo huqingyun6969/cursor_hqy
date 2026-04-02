@@ -2,7 +2,7 @@ import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import MainLayout from './layouts/MainLayout'
 import LoginPage from './pages/login/LoginPage'
-import { AuthGuard } from './hooks/useAuth'
+import { AuthGuard } from './components/AuthGuard'
 
 const App: React.FC = () => {
   return (

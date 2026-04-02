@@ -2,28 +2,41 @@
 
 ## Cursor Cloud specific instructions
 
-This repository contains `data-element-mgr`, a Spring Boot 3.4.3 + MyBatis-Plus 3.5.9 backend (JDK 17, Maven).
+This repository contains the **湖南数据要素平台系统** (Hunan Data Element Platform), a full-stack application with:
 
-### Build & run
+### Project Structure
+- `data-element-mgr/` — Spring Boot 3.4.3 backend (port 18081)
+- `data-element-mgr-ui/` — React 19 + Vite frontend (port 3001)
 
-- **Compile**: `mvn compile` (from `data-element-mgr/`)
-- **Test**: `mvn test` (from `data-element-mgr/`)
-- **Run**: `mvn spring-boot:run` (requires MySQL on localhost:3306, db `data_element_platform`, user/pass `root`/`root`)
-- Nacos discovery is disabled by default (`NACOS_ENABLED=false`).
+### System Dependencies
+- **JDK 17**: Must be set as default (`update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java`)
+- **Maven 3.8+**: For backend builds
+- **Node.js 22+** / **pnpm**: For frontend builds
+- **MySQL 8**: Run via Docker: `sudo docker run -d --name mysql-dev -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=data_element_platform mysql:8.0`
+- **Docker**: Required for MySQL. In Cloud Agent VMs, use `fuse-overlayfs` storage driver and `iptables-legacy`.
 
-### Caveats
+### Running Services
 
-- MyBatis-Plus 3.5.9 moved `PaginationInnerInterceptor` to the `mybatis-plus-jsqlparser` artifact. The pom.xml needs that dependency for pagination to compile.
-- The app expects MySQL; without it, `spring-boot:run` will fail at startup with a datasource error. MySQL runs in Docker container `mysql-dev` — start with `sudo docker start mysql-dev` if stopped.
-- No lint tool (Checkstyle/PMD) is currently configured; static analysis is limited to `mvn compile`.
-- `application.yml` sets `spring.sql.init.mode=always` with `continue-on-error=true`, so `db/dep.sql` (schema) and `db/dep_data.sql` (seed data) run on every app startup. Both are idempotent (`CREATE TABLE IF NOT EXISTS`, `INSERT IGNORE`).
+**Backend** (requires MySQL running on localhost:3306):
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+cd data-element-mgr && mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
 
-### Frontend (`data-element-mgr-ui/`)
+**Frontend**:
+```bash
+cd data-element-mgr-ui && pnpm dev
+```
 
-- **Stack**: React 19, TypeScript 5.9, Ant Design 5, React Router v7, Vite 8
-- **Install**: `pnpm install` (from `data-element-mgr-ui/`)
-- **Dev**: `pnpm dev` — serves on port 3001 (falls back to next available port)
-- **Build**: `pnpm build` (runs `tsc -b && vite build`)
-- **Lint**: `pnpm lint` (ESLint with typescript-eslint + react-hooks + react-refresh)
-- **API proxy**: Dev server proxies `/api` to `http://127.0.0.1:18081` (the Spring Boot backend)
-- Page components are lazy-loaded in `MainLayout.tsx`. TypeScript will report "Cannot find module" errors until individual page component files are created under `src/pages/`.
+### Important Caveats
+- Spring Cloud Alibaba 2023.0.1.2 is used with Spring Boot 3.4.3, which requires `spring.cloud.compatibility-verifier.enabled=false` in `application.yml`.
+- Nacos discovery is disabled by default (`NACOS_ENABLED=false`). Enable it only when Nacos server is available.
+- SSO login requires access to internal SSO server (172.16.81.220:9000). For local development, set a cookie manually: `document.cookie = "access_token=test-token; path=/"`
+- Database tables are auto-created on startup via `spring.sql.init.mode=always` with `CREATE TABLE IF NOT EXISTS`.
+
+### Lint / Test / Build Commands
+
+| Project | Lint | Build | Test |
+|---------|------|-------|------|
+| Backend | `mvn compile` | `mvn package -DskipTests` | `mvn test` |
+| Frontend | `pnpm lint` | `pnpm build` | `pnpm lint && pnpm build` (no unit tests yet) |

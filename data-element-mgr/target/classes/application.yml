@@ -25,6 +25,8 @@ spring:
       data-locations: classpath:db/dep_data.sql
       continue-on-error: true
   cloud:
+    compatibility-verifier:
+      enabled: false
     nacos:
       discovery:
         enabled: ${NACOS_ENABLED:false}

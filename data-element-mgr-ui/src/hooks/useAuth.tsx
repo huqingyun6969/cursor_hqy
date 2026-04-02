@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import Cookies from 'js-cookie'
-import { Spin } from 'antd'
 import request from '../utils/request'
 
 interface UserProfile {
@@ -22,9 +20,10 @@ export const useAuth = () => {
       return
     }
     request.get('/auth/profile', { params: { access_token: token } })
-      .then((res: any) => {
-        if (res.code === 200 && res.data) {
-          setUser(res.data)
+      .then((res: unknown) => {
+        const data = res as { code: number; data: UserProfile }
+        if (data.code === 200 && data.data) {
+          setUser(data.data)
         }
       })
       .catch(() => {
@@ -39,21 +38,4 @@ export const useAuth = () => {
   }
 
   return { user, loading, logout }
-}
-
-export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const navigate = useNavigate()
-  const token = Cookies.get('access_token')
-
-  useEffect(() => {
-    if (!token) {
-      navigate('/login', { replace: true })
-    }
-  }, [token, navigate])
-
-  if (!token) {
-    return <Spin spinning tip="正在跳转登录..." fullscreen />
-  }
-
-  return <>{children}</>
 }
